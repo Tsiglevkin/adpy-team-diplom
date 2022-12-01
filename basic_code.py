@@ -3,7 +3,9 @@ from random import randrange
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 
-token = input('Token: ')
+# token = input('Token: ')
+with open('token.txt', 'r') as file_object:
+    token = file_object.read().strip()
 
 vk = vk_api.VkApi(token=token)
 longpoll = VkLongPoll(vk)
