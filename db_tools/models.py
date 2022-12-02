@@ -1,5 +1,7 @@
 import sqlalchemy as sq
 from sqlalchemy.orm import declarative_base, relationship
+from tqdm import tqdm
+
 
 Base = declarative_base()
 
@@ -71,12 +73,12 @@ def show_black_list(some_session, some_user_vk_id: int) -> list:
             MarkList.dislike is True and Users.vk_id == some_user_vk_id)
 
 
-def add_id_to_users(some_session, user_vk_id: int) -> str:
+def add_id_to_users(some_session, user_vk_id_list: list):
     """Функция добавляет пользователя в таблицу Users"""
-    new_user = Users(vk_id=user_vk_id)
-    some_session.add(new_user)
-    some_session.commit()
-    return f'Пользователь с id {user_vk_id} добавлен в таблицу Users'
+    for id_ in tqdm(user_vk_id_list, desc='Добавляем id в БД'):
+        new_user = Users(vk_id=id_)
+        some_session.add(new_user)
+        some_session.commit()
 
 
 def add_id_to_candidates(some_session, user_vk_id: int) -> str:
