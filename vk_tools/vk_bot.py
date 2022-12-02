@@ -19,9 +19,7 @@ class VkBot:
 
     def send_msg(self, user_id, message):
         """"        получает id пользователя ВК <user_id>, и сообщение ему        """
-        # self.bot_api.messages.send(peer_id=user_id, message=message, random_id=get_random_id())
-        self.bot_session.method('messages.send',
-            {'user_id': user_id, 'message': message, 'random_id': get_random_id(), })
+        self.bot_api.messages.send(peer_id=user_id, message=message, random_id=get_random_id())
 
     def write_db_all_group_users(self):
         tools = vk_api.VkTools(self.bot_session)
