@@ -5,6 +5,8 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 # from random import randrange
 from vk_api.utils import get_random_id
+import matchmaker
+from matchmaker import Matchmaker
 from pprint import pprint
 
 
