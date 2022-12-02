@@ -1,4 +1,5 @@
 .idea/
-vk_tools/__pycache__/
-tests/__pycache__/
 .about/
+db/__pycache__/
+tests/__pycache__/
+vk_tools/__pycache__/
