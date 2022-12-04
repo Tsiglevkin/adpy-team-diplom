@@ -18,6 +18,8 @@ if __name__ == '__main__':
     bot = VkBot()
     bot.start()
 
+    # a little change
+
     # create_tables(engine)
     # drop_tables(engine)
 
