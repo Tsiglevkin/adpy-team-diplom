@@ -10,7 +10,7 @@ class Users(Base):
     __tablename__ = 'users'
 
     user_id = sq.Column(sq.Integer, primary_key=True)
-    vk_id = sq.Column(sq.Integer, nullable=False)
+    vk_id = sq.Column(sq.Integer, nullable=False, unique=True)
 
     def __str__(self):
         return f'User with {self.user_id} has vk_id {self.vk_id}'
@@ -20,10 +20,10 @@ class Candidate(Base):
     __tablename__ = 'candidate'
 
     candidate_id = sq.Column(sq.Integer, primary_key=True)
-    vk_id = sq.Column(sq.Integer, nullable=False)
+    vk_id = sq.Column(sq.Integer, nullable=False, unique=True)
 
     def __str__(self):  # метод str для того, чтобы корректно принтовать функцию
-        return f'Candidate with {self.candidate_id} has vk_id {self.vk_id}'
+        return f'Candidate with id {self.candidate_id} has vk_id {self.vk_id}'
 
 
 class MarkList(Base):
@@ -81,26 +81,39 @@ def add_id_to_users(some_session, user_vk_id_list: list):
         some_session.commit()
 
 
-def add_id_to_candidates(some_session, user_vk_id: int) -> str:
-    """Функция добавляет пользователя в таблицу Candidate"""
-    new_candidate = Candidate(vk_id=user_vk_id)
+def add_id_to_candidates(some_session, user_vk_id: int, candidate_vk_id: int) -> str:
+    """Функция добавляет пользователя в таблицу Candidate и в таблицу MarkList.
+    Требуются vk_id от пользователя и кандидата"""
+    new_candidate = Candidate(vk_id=candidate_vk_id)
     some_session.add(new_candidate)
+    some_session.commit()
+
+    user_id_for_mark = some_session.query(Users).filter(Users.vk_id == user_vk_id)
+    candidate_id_for_mark = some_session.query(Candidate).filter(Candidate.vk_id == candidate_vk_id)
+
+    new_mark_candidate = MarkList(user_id=user_id_for_mark, candidate_id=candidate_id_for_mark, like=False,
+                                  dislike=False)
+    some_session.add(new_mark_candidate)
     some_session.commit()
     return f'Пользователь с id {user_vk_id} добавлен в таблицу Candidate'
 
 
-def get_like(some_session, user_vk_id: int, vk_candidate_id: int) -> str:
-    """Функция позволяет поставить like кандидату"""
-    marked_candidate = MarkList(user_id=user_vk_id, candidate_id=vk_candidate_id, like=True, dislike=False)
+def get_like(some_session, user_vk_id: int, candidate_vk_id: int) -> str:
+    """Функция позволяет поставить like кандидату. Требуются vk_id от пользователя и кандидата"""
+    user_id = some_session.query(Users).filter(Users.vk_id == user_vk_id)
+    candidate_id = some_session.query(Candidate).filter(Candidate.vk_id == candidate_vk_id)
+    marked_candidate = MarkList(user_id=user_id, candidate_id=candidate_id, like=True, dislike=False)
     some_session.add(marked_candidate)
     some_session.commit()
-    return f'Кандидату {vk_candidate_id} поставлен like.'
+    return f'Кандидату {candidate_id} поставлен like.'
 
 
-def get_dislike(some_session, user_vk_id: int, vk_candidate_id: int) -> str:
-    """Функция позволяет поставить dislike кандидату"""
-    marked_candidate = MarkList(user_id=user_vk_id, candidate_id=vk_candidate_id, like=False, dislike=True)
+def get_dislike(some_session, user_vk_id: int, candidate_vk_id: int) -> str:
+    """Функция позволяет поставить dislike кандидату. Требуются vk_id от пользователя и кандидата"""
+    user_id = some_session.query(Users).filter(Users.vk_id == user_vk_id)
+    candidate_id = some_session.query(Candidate).filter(Candidate.vk_id == candidate_vk_id)
+    marked_candidate = MarkList(user_id=user_id, candidate_id=candidate_id, like=False, dislike=True)
     some_session.add(marked_candidate)
     some_session.commit()
-    return f'Кандидату {vk_candidate_id} поставлен dislike.'
+    return f'Кандидату {candidate_id} поставлен dislike.'
 
