@@ -64,8 +64,8 @@ class VkBot(Matchmaker):
                             farewell = farewells[randrange(len(farewells))]
                             self.send_msg(event, f'{farewell.upper()},\n'
                                                  f'{self.get_user_name(event.user_id)}!\n :))')
-                        elif text == self.service['services']['matchmaker']['command'].lower() \
-                                or text == self.service['services']['matchmaker']['button'].lower() \
+                        elif (text == self.service['services']['matchmaker']['command'].lower()
+                              or text == self.service['services']['matchmaker']['button'].lower()) \
                                 and not self.is_advanced:
                             self.change_mode(self.service['services']['matchmaker'])
                             self.matchmaker_mode(event)
@@ -123,4 +123,3 @@ class VkBot(Matchmaker):
         user = self.get_user(user_id, 'gen')
         return f'{user["last_name"]} {user["first_name"]} (id = {user_id})'
         #        f'{user["city"]["title"]} (id = {user_id})'
-
