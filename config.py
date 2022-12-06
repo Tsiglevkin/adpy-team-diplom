@@ -47,7 +47,7 @@ def write_json_db_config(config_file: str = 'db.cfg', overwrite: bool = False):
     write_json_file(get_db_config_dict(), config_file)
 
 
-def write_json_bot_config(config_file: str = 'bot.cfg', overwrite: bool = False):
+def write_json_bot_config(config_file: str = 'bot.cfg', overwrite: bool = True):
     if overwrite:
         print(f'The file {config_file} will be overwrite!')
     elif config_file in os.listdir():
@@ -59,7 +59,7 @@ def write_json_bot_config(config_file: str = 'bot.cfg', overwrite: bool = False)
 def get_db_config_dict():
     return {
         'login': 'postgres',
-        'password': '4sql%pg',
+        'password': 'postgres',
         'dbase_name': 'vkinder',
         'server': 'localhost:5432',
         'scheme': 'public',
@@ -107,9 +107,17 @@ def get_bot_config_dict():
                                         'button': 'Сохранить',
                                         'description': '',
                                         'services': {}},
+                                    'exit': {
+                                        'command': '@@/',
+                                        'button': 'Выход',
+                                        'services': {}}
                                 }},
                             'print': {
                                 'command': '@@/!',
                                 'button': 'Список',
+                                'services': {}},
+                            'exit': {
+                                'command': '@@/',
+                                'button': 'Выход',
                                 'services': {}}}}}}}
     }

@@ -22,6 +22,7 @@ class VkBot(Matchmaker):
         super(VkBot, self).__init__()
         self._BOT_CONFIG = get_bot_config(bot)
         self.is_advanced = False
+        self.polite = None
         self.service = self._BOT_CONFIG['mode']['start-up']
         self.vk_session = vk_api.VkApi(token=self._BOT_CONFIG['token'])
         self.vk_api = self.vk_session.get_api()
@@ -37,7 +38,7 @@ class VkBot(Matchmaker):
         return self.vk_tools.get_all('groups.getMembers', 1000, {'group_id': self._BOT_CONFIG['group_id']})['items']
 
     def matchmaker_mode(self, event):
-        self.send_msg(event, 'Спасибо за компанию!')
+        self.send_msg(event, f'Спасибо за компанию,\n{self.get_user_name(event.user_id)}!')
 
     def start(self):
         # Работа с сообщениями
@@ -48,11 +49,13 @@ class VkBot(Matchmaker):
             print('Запущен бот группы id =', longpoll.group_id)
             try:
                 for event in longpoll.listen():
+                    self.polite = None
                     if event.type == VkEventType.MESSAGE_NEW and event.to_me:
                         self.print_message_description(event)
                         text = event.text.lower()
                         # Oтветы:
                         if text in greetings and not self.is_advanced:
+                            self.polite = 'greetings'
                             keyboard = VkKeyboard(one_time=True)
                             keyboard.add_button(self.service['services']['matchmaker']['button'],
                                                 VkKeyboardColor.PRIMARY)
@@ -61,12 +64,19 @@ class VkBot(Matchmaker):
                                                  f'{self.get_user_name(event.user_id)}!\n :))',
                                           keyboard)
                         elif text in farewells and not self.is_advanced:
+                            self.polite = 'farewells'
                             farewell = farewells[randrange(len(farewells))]
                             self.send_msg(event, f'{farewell.upper()},\n'
                                                  f'{self.get_user_name(event.user_id)}!\n :))')
                         elif (text == self.service['services']['matchmaker']['command'].lower()
-                              or text == self.service['services']['matchmaker']['button'].lower()) \
+                                or text == self.service['services']['matchmaker']['button'].lower()) \
                                 and not self.is_advanced:
+                            if event.from_chat:
+                                self.polite = 'switching'
+                                message = ''
+                                if self.is_advanced:
+                                    message = 'Супер! Ты уже в командном режиме...\n'
+                                self.send_msg(event, f'{message}Для продолжения переходи в чат с @{self._BOT_CONFIG["name"]}!')
                             self.change_mode(self.service['services']['matchmaker'])
                             self.matchmaker_mode(event)
                             self.change_mode()
@@ -81,10 +91,17 @@ class VkBot(Matchmaker):
         service_msg = self.send_msg_title()
         for service in self.service['services']:
             activity = self.service['services'][service]
-            service_msg += "\n-\t{}\t(\t{}\t)".format(activity['button'].upper(), activity['command'])
-        post = {'peer_id': event.peer_id, 'message': message + service_msg, 'random_id': get_random_id()}
+            service_msg += '\n-\t{}\t(\t{}\t)'.format(activity['button'].upper(), activity['command'])
+        if event.from_chat:
+            if self.polite:
+                post = {'peer_id': event.peer_id, 'message': message, 'random_id': get_random_id()}
+                self.send_msg_except(post)
+        post = {'peer_id': event.user_id, 'message': message + service_msg, 'random_id': get_random_id()}
         if keyboard:
             post['keyboard'] = keyboard.get_keyboard()
+        self.send_msg_except(post)
+
+    def send_msg_except(self, post):
         try:
             self.vk_session.method('messages.send', post)
         except vk_api.exceptions.ApiError as no_permission:
@@ -96,7 +113,7 @@ class VkBot(Matchmaker):
 
     def print_message_description(self, event):
         msg = 'Новое сообщение:\t'
-        msg += 'личное' if event.user_id > 0 else ''
+        # msg += 'личное' if event.user_id > 0 else ''
         msg += f'из чата {event.chat_id}' if event.from_chat else ''
         msg += f'\nот: {self.get_user_title(event.user_id)})'
         msg += f' *--- {event.text}'
