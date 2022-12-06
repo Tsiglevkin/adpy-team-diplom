@@ -1,5 +1,6 @@
 .idea/
 .about/
+__pycache__/
 db_tools/__pycache__/
 tests/__pycache__/
 vk_tools/__pycache__/
