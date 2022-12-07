@@ -90,7 +90,7 @@ def get_bot_config_dict():
                     'matchmaker': {
                         'button': 'НЯША',
                         'command': '@@/!',
-                        'description': 'мои любимчики в группе',
+                        'description': 'мои любимчики',
                         'services': {
                             'search': {
                                 'command': '@@/?',
