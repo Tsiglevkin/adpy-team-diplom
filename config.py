@@ -2,14 +2,15 @@
 
 import os
 import json
+from pprint import pprint
 
 
-def get_bot_config(config_file: str = 'bot.cfg'):
-    return read_json_file(config_file, write_json_bot_config(config_file))
+def get_bot_config(config_file: str = 'bot.cfg', overwrite=True):
+    return read_json_file(config_file, write_json_bot_config(config_file, overwrite))
 
 
-def get_db_config(config_file: str = 'db.cfg'):
-    return read_json_file(config_file, write_json_db_config(config_file))
+def get_db_config(config_file: str = 'db.cfg', overwrite=False):
+    return read_json_file(config_file, write_json_db_config(config_file, overwrite))
 
 
 def read_json_file(file, dict_: dict = None):
@@ -30,7 +31,7 @@ def write_json_file(dict_, file):
     try:
         with open(file, 'w', encoding='utf-8') as f:
             json.dump(dict_, f, ensure_ascii=False, indent=2)
-        print(f'Congratulations! The bot config are saved to {file}')
+        print(f'Congratulations! The config was saved to {file}')
     except OSError as other:
         print(f'There were problems opening the file {file}: \n\t{other}')
         print('Sorry, the results are not saved to a json file...')
@@ -38,7 +39,7 @@ def write_json_file(dict_, file):
     return dict_
 
 
-def write_json_db_config(config_file: str = 'db.cfg', overwrite: bool = False):
+def write_json_db_config(config_file: str = 'db.cfg', overwrite: bool = True):
     if overwrite:
         print(f'The file {config_file} will be overwrite!')
     elif config_file in os.listdir():
@@ -59,7 +60,7 @@ def write_json_bot_config(config_file: str = 'bot.cfg', overwrite: bool = True):
 def get_db_config_dict():
     return {
         'login': 'postgres',
-        'password': 'postgres',
+        'password': '4sql%pg',
         'dbase_name': 'vkinder',
         'server': 'localhost:5432',
         'scheme': 'public',
@@ -85,39 +86,47 @@ def get_bot_config_dict():
             'start-up': {
                 'button': 'Вежливый',
                 'command': '@@',
+                'service_code': '1',
                 'description': '',
                 'services': {
                     'matchmaker': {
                         'button': 'НЯША',
                         'command': '@@/!',
+                        'service_code': '11',
                         'description': 'мои любимчики',
                         'services': {
                             'search': {
                                 'command': '@@/?',
                                 'button': 'НАЙТИ',
+                                'service_code': '111',
                                 'description': 'поиск интересных членов группы',
                                 'services': {
                                     'next': {
                                         'command': '@@/>',
                                         'button': 'Следующий',
+                                        'service_code': '1111',
                                         'description': '',
                                         'services': {}},
                                     'save': {
                                         'command': '@@/+',
                                         'button': 'Сохранить',
+                                        'service_code': '1112',
                                         'description': '',
                                         'services': {}},
                                     'exit': {
                                         'command': '@@/',
                                         'button': 'Выход',
+                                        'service_code': '1113',
                                         'services': {}}
                                 }},
                             'print': {
                                 'command': '@@/!',
                                 'button': 'Список',
+                                'service_code': '112',
                                 'services': {}},
                             'exit': {
                                 'command': '@@/',
                                 'button': 'Выход',
+                                'service_code': '113',
                                 'services': {}}}}}}}
     }
