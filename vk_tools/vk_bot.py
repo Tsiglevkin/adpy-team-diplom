@@ -113,13 +113,9 @@ class VkBot(Matchmaker):
             # Oтветы:
             if text in greetings and not self.menu.is_advanced:
                 self.polite = 'greetings'
-                keyboard = VkKeyboard(one_time=False)
-                keyboard.add_button(self.menu.services['matchmaker']['button'],
-                                    VkKeyboardColor.PRIMARY)
                 greeting = greetings[randrange(len(greetings))]
-                self.send_msg(event, f'{greeting.upper()},\n'
-                                     f'{self.get_user_name(event.user_id)}!\n :))',
-                              keyboard)
+                self.start_mode_start(event, '{},\n{}!\n :))'.format(greeting.upper(),
+                                                                     self.get_user_name(event.user_id)))
             elif text in farewells and not self.menu.is_advanced:
                 self.polite = 'farewells'
                 farewell = farewells[randrange(len(farewells))]
