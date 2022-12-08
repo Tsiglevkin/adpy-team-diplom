@@ -99,7 +99,7 @@ def get_bot_config_dict():
                                 'command': '@@/?',
                                 'button': 'НАЙТИ',
                                 'service_code': '111',
-                                'description': 'поиск интересных членов группы',
+                                'description': 'поиск интересных пиплов',
                                 'services': {
                                     'next': {
                                         'command': '@@/>',

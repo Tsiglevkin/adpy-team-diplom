@@ -15,7 +15,7 @@ from vk_tools.vk_bot_menu import VkBotMenu
 from vk_tools.matchmaker import Matchmaker
 
 
-def converter(string=' ', splitter=','):
+def split_str_to_list(string=' ', splitter=','):
     return list(c.strip() for c in string.strip().split(splitter))
 
 
@@ -24,7 +24,6 @@ class VkBot(Matchmaker):
         super(VkBot, self).__init__()
         self._BOT_CONFIG = get_bot_config(bot)
         self.menu = VkBotMenu(self._BOT_CONFIG['mode'])
-        self.polite = None
         self.vk_session = vk_api.VkApi(token=self._BOT_CONFIG['token'])
         self.vk_api = self.vk_session.get_api()
         self.vk_tools = vk_api.VkTools(self.vk_session)
@@ -33,10 +32,14 @@ class VkBot(Matchmaker):
     def get_group_users(self) -> list:
         return self.vk_tools.get_all('groups.getMembers', 1000, {'group_id': self._BOT_CONFIG['group_id']})['items']
 
+    def get_keyboard(self, one_time=True) -> dict:
+        keyboard = VkKeyboard(one_time)
+        for button in self.menu.get_button_list():
+            keyboard.add_button(button, VkKeyboardColor.PRIMARY)
+        return keyboard.get_keyboard()
+
     def start(self):
         # Работа с сообщениями
-        greetings = converter(self._BOT_CONFIG['greetings'])
-        farewells = converter(self._BOT_CONFIG['farewells'])
         while True:
             longpoll = VkLongPoll(self.vk_session, group_id=self._BOT_CONFIG['group_id'])
             print('Запущен бот группы id =', longpoll.group_id)
@@ -47,125 +50,111 @@ class VkBot(Matchmaker):
                     elif self.menu.service_name == 'matchmaker':
                         self.matchmaker_mode_events(event)
                     elif self.menu.service_name == 'search':
-                        self.start_mode_events(event)
-                    elif self.menu.service_name == 'print':
-                        self.start_mode_events(event)
-                    elif self.menu.service_name == 'exit' and self.menu.service_code == '113':
-                        self.start_mode_events(event)
+                        self.search_mode_events(event)
                     else:
                         self.start_mode_events(event)
             except requests.exceptions.ReadTimeout as timeout:
                 continue
 
     def search_mode_events(self, event):
-        pass
-
-    def print_mode_events(self, event):
-        pass
-
-    def exit_mode_events(self, event):
-        pass
-
-    def matchmaker_mode_start(self, event, message=''):
-        self.polite = None
-        keyboard = VkKeyboard(one_time=True)
-        for button in self.menu.get_button_list():
-            keyboard.add_button(button, VkKeyboardColor.PRIMARY)
-        self.send_msg(event, f'{message} Текущий', keyboard)
+        if event.type == VkEventType.MESSAGE_NEW and event.to_me:
+            self.print_message_description(event)
+            text = event.text.lower()
+            # Oтветы:
+            if event.from_chat:
+                self.send_msg_use_bot_dialog(event)
+            elif self.exit(event):
+                pass
+            else:
+                if not event.from_chat:
+                    self.start_mode(event, 'Не понимаю...')
 
     def matchmaker_mode_events(self, event):
-        greetings = converter(self._BOT_CONFIG['greetings'])
-        farewells = converter(self._BOT_CONFIG['farewells'])
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             self.print_message_description(event)
             text = event.text.lower()
-            self.polite = None
             # Oтветы:
-            if (text == self.menu.services['exit']['command'].lower()
-                    or text == self.menu.services['exit']['button'].lower()):
-                if event.from_chat:
-                    self.polite = 'switching'
-                    message = f'{self.get_user_name(event.user_id)}!\n'
-                    self.send_msg(event, '{}Юзать сервис переходи в чат с @{}!'.format(
-                        message, self._BOT_CONFIG["name"]))
-                else:
-                    message = '{},\nсервис "{}" закрыт!'.format(
-                        self.get_user_name(event.user_id), self.menu.service_name)
-                    self.menu.exit()
-                    self.start_mode_start(event, message)
+            if event.from_chat:
+                self.send_msg_use_bot_dialog(event)
+            elif (text == self.menu.services['search']['command'].lower()
+                  or text == self.menu.services['search']['button'].lower()):
+                self.menu.switch('search')
+                self.start_mode(event, '...Together forever,\n{}!'.format(self.get_user_name(event.user_id)))
+            elif (text == self.menu.services['print']['command'].lower()
+                  or text == self.menu.services['print']['button'].lower()):
+                self.start_mode(event, 'Ok,\n{}!'.format(self.get_user_name(event.user_id)))
+            elif self.exit(event):
+                pass
             else:
                 if not event.from_chat:
-                    self.matchmaker_mode_start(event, 'Не понимаю...')
-
-    def start_mode_start(self, event, message=''):
-        self.polite = None
-        keyboard = VkKeyboard(one_time=True)
-        for button in self.menu.get_button_list():
-            keyboard.add_button(button, VkKeyboardColor.PRIMARY)
-        self.send_msg(event, f'{message} Текущий', keyboard)
+                    self.start_mode(event, 'Не понимаю...')
 
     def start_mode_events(self, event):
-        greetings = converter(self._BOT_CONFIG['greetings'])
-        farewells = converter(self._BOT_CONFIG['farewells'])
+        greetings = split_str_to_list(self._BOT_CONFIG['greetings'])
+        farewells = split_str_to_list(self._BOT_CONFIG['farewells'])
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             self.print_message_description(event)
             text = event.text.lower()
             # Oтветы:
-            if text in greetings and not self.menu.is_advanced:
-                self.polite = 'greetings'
+            if text in greetings:
                 greeting = greetings[randrange(len(greetings))]
-                self.start_mode_start(event, '{},\n{}!\n :))'.format(greeting.upper(),
-                                                                     self.get_user_name(event.user_id)))
-            elif text in farewells and not self.menu.is_advanced:
-                self.polite = 'farewells'
+                message = '{},\n{}!\n :))'.format(greeting.upper(), self.get_user_name(event.user_id))
+                self.start_mode(event, message)
+            elif text in farewells:
                 farewell = farewells[randrange(len(farewells))]
-                self.send_msg(event, f'{farewell.upper()},\n'
-                                     f'{self.get_user_name(event.user_id)}!\n :))')
+                self.send_msg(event.peer_id, f'{farewell.upper()},\n{self.get_user_name(event.user_id)}!\n :))')
             elif (text == self.menu.services['matchmaker']['command'].lower()
                   or text == self.menu.services['matchmaker']['button'].lower()):
-                if event.from_chat:
-                    self.polite = 'switching'
-                    message = f'{self.get_user_name(event.user_id)}!\n'
-                    self.send_msg(event, '{}Для продолжения переходи в чат с @{}!'.format(
-                        message, self._BOT_CONFIG["name"]))
                 self.menu.switch('matchmaker')
-                self.matchmaker_mode_start(event, 'Спасибо за компанию,\n{}!'.format(
-                    self.get_user_name(event.user_id)))
+                self.start_mode(event, 'Спасибо за компанию,\n{}!'.format(self.get_user_name(event.user_id)))
+                self.send_msg_use_bot_dialog(event)
             else:
-                if not event.from_chat:
-                    self.start_mode_start(event, 'Не понимаю...')
+                self.start_mode(event, 'Не понимаю...')
         else:
             print(event.type)
             print()
 
-    def send_msg(self, event, message, keyboard=None):
-        """" Получает id пользователя ВК <user_id>, и сообщение ему """
-        if event.from_chat:
-            if self.polite:
-                post = {'peer_id': event.peer_id, 'message': message, 'random_id': get_random_id()}
-                self.send_msg_except(post)
-                if self.polite != 'greetings':
-                    message = None
-        if message:
-            post = {'peer_id': event.user_id, 'message': f'{message}{self.menu}', 'random_id': get_random_id()}
-            if keyboard:
-                post['keyboard'] = keyboard.get_keyboard()
-            self.send_msg_except(post)
+    def start_mode(self, event, message=''):
+        post = {'peer_id': event.peer_id, 'random_id': get_random_id(),
+                'message': message if event.from_chat else f'{message} Текущий{self.menu}'}
+        if not event.from_chat:
+            post['keyboard'] = self.get_keyboard()
+        self.send_post(post)
 
-    def send_msg_except(self, post):
+    def exit(self, event) -> bool:
+        text = event.text.lower()
+        if (text == self.menu.services['exit']['command'].lower()
+                or text == self.menu.services['exit']['button'].lower()):
+            message = '{},\nсервис "{}" закрыт!'.format(self.get_user_name(event.user_id), self.menu.button)
+            self.menu.exit()
+            self.start_mode(event, message)
+            return True
+        return False
+
+    def send_msg(self, peer_id, message, keyboard=None):
+        """" Получает id пользователя ВК <user_id>, и сообщение ему """
+        post = {'peer_id': peer_id, 'random_id': get_random_id(), 'message': message}
+        if keyboard:
+            post['keyboard'] = keyboard.get_keyboard()
+        self.send_post(post)
+
+    def send_post(self, post):
         try:
             self.vk_session.method('messages.send', post)
         except vk_api.exceptions.ApiError as no_permission:
             print(f'\t{no_permission}')
 
+    def send_msg_use_bot_dialog(self, event):
+        if not event.from_user:
+            self.send_msg(event.peer_id, '{} Юзать сервис переходи в чат с @{}!'.format(
+                f'{self.get_user_name(event.user_id)}!\n', self._BOT_CONFIG["name"]))
+
     def print_message_description(self, event):
         msg = 'Новое сообщение:\t'
-        # msg += 'личное' if event.user_id > 0 else ''
         msg += f'из чата {event.chat_id}' if event.from_chat else ''
         msg += f'\nот: {self.get_user_title(event.user_id)})'
         msg += f' *--- {event.text}'
         print(msg)
-        # print('*---', event.from_user, event.from_chat, event.from_group, event.from_me)
         return msg
 
     def get_user(self, user_id, name_case='nom', fields="city"):
@@ -186,4 +175,3 @@ class VkBot(Matchmaker):
         """ Получаем кратко пользователя"""
         user = self.get_user(user_id, 'gen')
         return f'{user["last_name"]} {user["first_name"]} (id = {user_id})'
-        #        f'{user["city"]["title"]} (id = {user_id})'
