@@ -93,13 +93,9 @@ class VkBot(Matchmaker):
                         self.get_user_name(event.user_id), self.menu.service_name)
                     self.menu.exit()
                     self.start_mode_start(event, message)
-                    # keyboard = VkKeyboard(one_time=True)
-                    # for button in self.menu.get_button_list():
-                    #     keyboard.add_button(button, VkKeyboardColor.PRIMARY)
-                    # self.send_msg(event, message, keyboard)
             else:
                 if not event.from_chat:
-                    self.send_msg(event, 'Не понимаю...')
+                    self.matchmaker_mode_start(event, 'Не понимаю...')
 
     def start_mode_start(self, event, message=''):
         self.polite = None
@@ -141,7 +137,7 @@ class VkBot(Matchmaker):
                     self.get_user_name(event.user_id)))
             else:
                 if not event.from_chat:
-                    self.send_msg(event, 'Не понимаю...')
+                    self.start_mode_start(event, 'Не понимаю...')
         else:
             print(event.type)
             print()
