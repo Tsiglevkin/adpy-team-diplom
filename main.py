@@ -27,8 +27,8 @@ if __name__ == '__main__':
     # create_tables(engine)
     # drop_tables(engine)
 
-    # Session = sessionmaker(bind=engine)
-    # session = Session()
+    Session = sessionmaker(bind=engine)
+    session = Session()
 
     # пробы функций
     # add_id_to_users(some_session=session, user_vk_id_list=[123, 465, 789, 987, 654, 321])
