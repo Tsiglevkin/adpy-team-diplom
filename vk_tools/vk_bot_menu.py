@@ -18,6 +18,7 @@ class VkBotMenu:
     def read_menu(self):
         self.button = self.service['button']
         self.command = self.service['command']
+        self.filter = self.service['filter']
         self.service_code = self.service['service_code']
         self.description = self.service['description']
         self.services = self.service['services']
@@ -42,7 +43,13 @@ class VkBotMenu:
 
     def get_buttons(self):
         return {'max': self.max_button,
-                'buttons': list(self.services[service]['button'] for service in self.services)}
+                'buttons': list(self.services[service]['button'] for service in self.services),
+                'filter': list(self.services[service]['filter'] for service in self.services)}
+
+    def get_filter_string(self, param=''):
+        buttons = self.get_buttons()
+        lst = list(button for num, button in enumerate(buttons['buttons']) if buttons['filter'][num])
+        return lst if param else ', '.join(lst)
 
     def switch(self, service=''):
         if service in self.services:

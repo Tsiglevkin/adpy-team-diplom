@@ -11,6 +11,9 @@ from bot_config.config import get_config
 from db_tools import orm_models as orm
 
 
+# app = FastAPI()
+
+
 class Matchmaker:
     def __init__(self, db='db.cfg'):
         self._DB_CONFIG: dict = get_config('db', db)
@@ -25,37 +28,56 @@ class Matchmaker:
         db = self._DB_CONFIG
         return 'postgresql://{}:{}@{}/{}'.format(db["login"], db["password"], db["server"], db["dbase name"])
 
-    def search_advisable_users(self, group_id: str = None,
-                               vk_tools: vk_api.tools.VkTools = None,
-                               search_filter_json_file: str = 'search_filter') -> list:
+    def search_advisable_users(self, group_id='', client_id='', search_filter={},
+                               vk_tools: vk_api.tools.VkTools = None) -> list:
         db = self.SessionLocal()
         for user in db.query(orm.Advisable).all():
             db.delete(user)
         Matchmaker.refresh_group_users(db, group_id, vk_tools)
+        std_filter = self.get_standard_filter(search_filter)
+        if std_filter:
 
+            advisable_users = list(db.query(orm.Advisable).all())
+        else:
+            advisable_users = list(db.query(orm.Advisable).all())
         db.commit()
-        advisable_users = list(db.query(orm.Advisable).all())
         db.close()
         return advisable_users
 
-    def get_filter_of_advisable_users(self):
-        pass
+    def get_standard_filter(self, search_filter={}) -> dict:
+        if not search_filter: return {}
+        try:
+            std_filter: dict = search_filter['standard']['services']
+            buttons = list(std_filter[service]['button'] for service in std_filter)
+            filters = list(std_filter[service]['filter'] for service in std_filter)
+            return {'string': ', '.join(list(button for num, button in enumerate(buttons) if filters[num])),
+                    'filter_values': list({'filter': button, 'value': filters[num]}
+                                          for num, button in enumerate(buttons) if filters[num])}
+        except KeyError as key_err:
+            print(f'\nОшибка данных: отсутствует ключ {key_err}')
+            return {}
+        except Exception as other:
+            print(f'\n{other}')
+            return {}
 
     @staticmethod
     def refresh_group_users(db: Session = None, group_id: str = '', vk_tools: vk_api.tools.VkTools = None) -> list:
         if not (db and group_id and vk_tools):
             print('Недостаточно параметров! db, group, tools')
             return []
-        print('Recording new users of VK group...')
+        # db = self.SessionLocal()
+        print('\nRecording new users of VK group...')
         vk_users_added = []
         while True:
             vk_group_users_right_now = vk_tools.get_all('groups.getMembers', 1000, {'group_id': group_id})['items']
             pprint(vk_group_users_right_now)
-            vk_users_added += list(vk_id for vk_id in vk_group_users_right_now if not db.query(orm.VkGroup).filter(orm.VkGroup.vk_id == vk_id).first())
+            vk_users_added += list(vk_id for vk_id in vk_group_users_right_now if
+                                   not db.query(orm.VkGroup).filter(orm.VkGroup.vk_id == vk_id).first())
             db.add_all(orm.VkGroup(vk_id=vk_id) for vk_id in vk_users_added)
             print('Added  to the VK group:', vk_users_added if vk_users_added else 'has no new users!')
             break
         db.commit()
+        # db.close()
         print('Congratulations! The updated list of users of the group has been read and recorded in the database.')
         return vk_users_added
 
