@@ -51,9 +51,9 @@ class VkBot(Matchmaker):
         self._BOT_CONFIG: dict = get_config()
         self.group_id = self._BOT_CONFIG['group_id']
         self.menu = VkBotMenu()
-        self.vk_session = vk_api.VkApi(token=self._BOT_CONFIG['token'])
-        self.vk_tools = vk_api.VkTools(self.vk_session)
-        self.vk_api = self.vk_session.get_api()
+        self.vk_session = vk_api.VkApi(token=self._BOT_CONFIG['token'])  # vk_api.vk_api.VkApi
+        self.vk_tools = vk_api.VkTools(self.vk_session)   # vk_api.tools.VkTools
+        self.vk_api = self.vk_session.get_api()  # vk_api.vk_api.VkApiMethod
         print(f"Создан объект бота! (id={self.vk_session.app_id})")
 
     def get_keyboard(self, callback=False, inline=False, one_time=True) -> dict:
@@ -140,7 +140,8 @@ class VkBot(Matchmaker):
                 msg = self.send_filter(event, 'Настроен Фильтр для поиска\t'
                                        )['message'] if self.menu.get_filter_string() else ''
             except KeyError as key_err:
-                self.my_except(event, key_err, f'Попытка взять значение по ошибочному ключу {key_err}', menu)
+                self.my_except(event, key_err, f'Попытка взять значение по ошибочному ключу {key_err}'
+                                               f' в search_standard_filter_mode_events(self, event)', menu)
             except Exception as other:
                 self.my_except(event, other)
 
@@ -169,14 +170,14 @@ class VkBot(Matchmaker):
                 elif text == menu['advanced']['command'].lower() or text == menu['advanced']['button'].lower():
                     self.start_mode(event, 'Модуль в разработке,\n{}!'.format(self.get_user_name(event)))
                 elif self.exit(event):
-                    std_filter = self.get_standard_filter(menu)['string']
+                    std_filter = self.get_standard_filter(menu)['button']
                     print('{}:\t{}'.format(self.menu.button,
                                            std_filter if std_filter else 'Стандартный фильтр не задан...'))
                 else:
                     if not event.from_chat:
                         self.start_mode(event, 'Не понимаю...')
             except KeyError as key_err:
-                self.my_except(event, key_err, f'Попытка взять значение по ошибочному ключу {key_err}', menu)
+                self.my_except(event, key_err, f'Попытка взять значение по ошибочному-1 ключу {key_err}', menu)
             except Exception as other:
                 self.my_except(event, other)
 
@@ -218,7 +219,7 @@ class VkBot(Matchmaker):
                     self.start_mode(event, '...And hello again,\n{}!'.format(self.get_user_name(event)))
                 elif text == menu['advisable']['command'].lower() or text == menu['advisable']['button'].lower():
                     search_filter = menu['filter']['services']
-                    std_filter = self.get_standard_filter(search_filter)['string']
+                    std_filter = self.get_standard_filter(search_filter)['button']
                     self.menu.switch('advisable')
                     self.start_mode(event=event,
                                     message='...And hello again,\n{}!\nИщем по фильтрам\n{}.\t'.format(
@@ -232,7 +233,7 @@ class VkBot(Matchmaker):
                     if not event.from_chat:
                         self.start_mode(event, 'Не понимаю...')
             except KeyError as key_err:
-                self.my_except(event, key_err, f'Попытка взять значение по ошибочному ключу {key_err}', menu)
+                self.my_except(event, key_err, f'Попытка взять значение по ошибочному-2 ключу {key_err}', menu)
             except Exception as other:
                 self.my_except(event, other)
 
@@ -265,10 +266,8 @@ class VkBot(Matchmaker):
         menu = self.menu.services
         greetings = split_str_to_list(self._BOT_CONFIG['greetings'])
         farewells = split_str_to_list(self._BOT_CONFIG['farewells'])
-        # if event.type == VkEventType.MESSAGE_NEW and event.to_me:
         if event.type == VkBotEventType.MESSAGE_NEW:
             self.print_message_description(event)
-            # text = event.text.lower()
             text = event.message['text'].lower()
             # Oтветы:
             if text:
@@ -321,6 +320,7 @@ class VkBot(Matchmaker):
             print()
 
         elif event.type == VkBotEventType.MESSAGE_EVENT:
+            # Callback кнопки не срабатывают: события не происходит ???
             print(event.type)
             print()
 
@@ -404,4 +404,3 @@ class VkBot(Matchmaker):
         """ Получаем кратко пользователя"""
         user = self.get_user(event, 'gen')
         return f'{user["last_name"]} {user["first_name"]} (id = {event.message["from_id"]})'
-        #        f'{user["city"]["title"]} (id = {user_id})'
