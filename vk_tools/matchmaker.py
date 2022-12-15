@@ -10,16 +10,28 @@ from bot_config.config import get_config
 from db_tools import orm_models as orm
 
 
-def check_dict_keys(dict_, keys, msg='данных'):
-    if not dict_ or not keys:
-        return []
-    for key in keys:
-        try:
-            dict_ = dict_[key]
-        except KeyError as key_err:
-            print(f'\nОшибка {msg}: отсутствует ключ {key_err}')
-            return []
-    return dict_
+def in_deviation(dev, val, check_val) -> bool:
+    val_dev = val + dev
+    return val <= check_val <= val_dev if val_dev > val else val_dev <= check_val <= val
+
+
+def field_value(any_dict, field_name=''):
+    value = ''
+    try:
+        value = any_dict[field_name]
+    except KeyError as key_err:
+        print(f'\tОтсутствует поле значений: {key_err}')
+    except Exception as other:
+        print(other)
+    return value
+
+
+def user_info_(user: dict = {}) -> str:
+    return "user{}: {} {} ({}) {} {}".format(
+        user['id'], field_value(user, 'first_name'), field_value(user, 'last_name'),
+        ['', 'жен', 'муж'][int(field_value(user, 'sex'))] if field_value(user, 'sex') else '',
+        field_value(user, 'bdate'),
+        field_value(user, 'city')['title'] if field_value(user, 'city') else '')
 
 
 class Matchmaker:
@@ -36,44 +48,90 @@ class Matchmaker:
         db = self._DB_CONFIG
         return 'postgresql://{}:{}@{}/{}'.format(db["login"], db["password"], db["server"], db["dbase name"])
 
+    #
+    # @staticmethod
+    # def get_db(session_local):
+    #     db = session_local()
+    #     try:
+    #         yield db
+    #     finally:
+    #         db.close()
+
     def search_advisable_users(self, group_id='', client_id='', search_filter={},
-                               vk_tools: vk_api.tools.VkTools = None) -> list:
+                               vk_tools: vk_api.tools.VkTools = None,
+                               vk_api_methods: vk_api.vk_api.VkApiMethod = None) -> list:
+        client_fields = 'sex,city,bdate,counters'
+        client_info = vk_api_methods.users.get(user_ids=client_id, fields=client_fields)[0]
+        user_info_fields = 'sex, city, bdate, counters'
         # db: Session = Depends(Matchmaker.get_db(self.SessionLocal))
         db = self.SessionLocal()
+        Matchmaker.refresh_group_users(group_id, db, vk_tools)
         for user in db.query(orm.Advisable).all():
             db.delete(user)
-        Matchmaker.refresh_group_users(group_id, db, vk_tools)
-
-        advisable_users = list(db.query(orm.Advisable).all())
         db.commit()
+        print('Deleted records in Advisable')
+        #        ----------  Стандартный поиск  -----------
+        bot_filter: dict = self.get_standard_filter(search_filter=search_filter)
+        print('------ {}:\t'.format(search_filter['standard']['description'].strip().upper()), end='')
+        if bot_filter['button']:
+            print(bot_filter['button'])
+            db.add_all(orm.Advisable(vk_id=user.vk_id) for user in db.query(orm.VkGroup).all()
+                       if self.is_advisable_user_by_standard(
+                user_info=vk_api_methods.users.get(user_ids=user.vk_id, fields=user_info_fields)[0],
+                client_info=client_info, bot_filter=bot_filter))
+        else:
+            print('Стандартный фильтр не задан...')
+            db.add_all(orm.Advisable(vk_id=user.vk_id) for user in db.query(orm.VkGroup).all())
+
+        db.commit()
+        advisable_users = list(user.vk_id for user in db.query(orm.Advisable).all())
+        print(advisable_users, ' --> was pulled into Advisable')
         db.close()
         return advisable_users
 
-    def is_advisable_user_by_standard(self, group_id='', user_id='', search_filter={},
-                                      vk_api_methods: vk_api.vk_api.VkApiMethod = None) -> bool:
-        if not (group_id and user_id and search_filter):
+    def is_advisable_user_by_standard(self, user_info={}, client_info={}, bot_filter={}) -> bool:
+        if not (user_info and client_info and bot_filter):
             print('Недостаточно параметров! group, client, filter, vk_api_methods')
-            return []
-        # std_filter: dict = search_filter['standard']['services']
-        std_fields = 'sex, city, bdate, counters'
-        user = vk_api_methods.users.get(user_ids=user_id, fields=std_fields)[0]
-        res = not user['is_closed']
-        bot_filter: dict = self.get_standard_filter(search_filter)
+            return False
+        res = not user_info['is_closed']
+        if not res:
+            return res
         bot_fields = bot_filter['filter_bot_fields']
         for field_name in bot_fields:
-            print(field_name)
             bot_field = bot_fields[field_name]
-            vk_field = bot_field['filter_api_field'].strip().lower()
-            if vk_field == 'sex':
-                pass
-            if vk_field == 'city':
-                pass
-            if vk_field == 'bdate':
-                pass
+            vk_user_field_name = bot_field['filter_api_field'].strip().lower()
+            vk_val = field_value(user_info, vk_user_field_name)
+            client_val = field_value(client_info, vk_user_field_name)
+            bot_val = bot_field['filter_api_field_value']
+            bot_dev = bot_field['filter_api_field_deviation_value']
+            print('ПРОВЕРКА:', field_name, '=', bot_val)  # -------------------------------------
+            if not bot_val:
+                if client_val:
+                    bot_val = client_val
+                else:
+                    res = not vk_val
+                    break
+            if not vk_val:
+                res = False
+                break
+            # res = res and vk_val == bot_val or (bot_dev and bot_dev.isdigit() and int(bot_dev)
+            #                                   and in_deviation(dev=int(bot_dev), val=bot_val, check_val=vk_val))
+            if vk_user_field_name == 'sex':
+                res = res and (str(vk_val) == str(bot_val))
+            elif vk_user_field_name == 'city':
+                vk_value = field_value(vk_val, 'title')
+                filter_value = field_value(bot_val, 'title')
+                print('{}, vk{}: {} -{}- filter: {}'.format(
+                    res, user_info['id'], vk_value, vk_value == filter_value, filter_value))
+                res = res and vk_value == filter_value
+                print(res, vk_val, )
+            elif vk_user_field_name == 'bdate':
+                res = res and vk_val == bot_val
             else:
                 pass
+        print(f'Congratulations-2! Найден подходящий {user_info_(user_info)}'
+              if res else f'\tПропускаем user{user_info["id"]}...')
         #
-        print('Congratulations! The updated list of users of the group has been read and recorded in the database.')
         return res
 
     def get_standard_filter(self, search_filter={}) -> dict:
@@ -101,6 +159,7 @@ class Matchmaker:
         if not (db and group_id and vk_tools):
             print('Недостаточно параметров! db, group, tools')
             return []
+        # db = self.SessionLocal()
         print('\nRecording new users of VK group...')
         vk_users_added = []
         while True:
@@ -112,11 +171,9 @@ class Matchmaker:
             print('Added  to the VK group:', vk_users_added if vk_users_added else 'has no new users!')
             break
         db.commit()
+        # db.close()
         print('Congratulations! The updated list of users of the group has been read and recorded in the database.')
         return vk_users_added
 
     def print_advisable(self):
-        db = self.SessionLocal()
-
-        db.commit()
-        db.close()
+        pass

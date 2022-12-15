@@ -54,7 +54,7 @@ def write_json_file(dict_, file):
 def get_db_config_json():
     return {
         'login': 'postgres',
-        'password': '4sql%pg',
+        'password': 'postgres',
         'dbase name': 'vkinder',
         'server': 'localhost:5432',
         'scheme': 'public',
@@ -127,7 +127,7 @@ def get_bot_menu_config_json():
                                                         'filter': '',
                                                         'filter_api_field': 'bdate',
                                                         'filter_api_field_value': '',
-                                                        'filter_api_field_deviation_value': '-1000000',
+                                                        'filter_api_field_deviation_value': '1000000',
                                                         'service_code': '123414',
                                                         'description': 'Моложе',
                                                         'max_buttons_peer_line': '',
@@ -138,7 +138,7 @@ def get_bot_menu_config_json():
                                                         'filter': '',
                                                         'filter_api_field': 'bdate',
                                                         'filter_api_field_value': '',
-                                                        'filter_api_field_deviation_value': '1000000',
+                                                        'filter_api_field_deviation_value': '-1000000',
                                                         'service_code': '123415',
                                                         'description': 'Старше',
                                                         'max_buttons_peer_line': '',
@@ -154,6 +154,40 @@ def get_bot_menu_config_json():
                                                         'description': 'ровесники',
                                                         'max_buttons_peer_line': '',
                                                         'services': {}},
+                                                    # 'gender': {
+                                                    #     'button': 'Пол',
+                                                    #     'command': '/gender',
+                                                    #     'filter': '',
+                                                    #     'filter_api_field': 'sex',
+                                                    #     'filter_api_field_value': '',
+                                                    #     'filter_api_field_deviation_value': '',
+                                                    #     'service_code': '123411',
+                                                    #     'description': 'Мужчина',
+                                                    #     'max_buttons_peer_line': '',
+                                                    #     'services': {
+                                                    #         'male': {
+                                                    #             'button': 'Муж',
+                                                    #             'command': '@@/gender:m',
+                                                    #             'filter': '',
+                                                    #             'filter_api_field': 'sex',
+                                                    #             'filter_api_field_value': '2',
+                                                    #             'filter_api_field_deviation_value': '0',
+                                                    #             'service_code': '123411',
+                                                    #             'description': 'Мужчина',
+                                                    #             'max_buttons_peer_line': '',
+                                                    #             'services': {}},
+                                                    #         'female': {
+                                                    #             'button': 'Жен',
+                                                    #             'command': '@@/gender:f',
+                                                    #             'filter': '',
+                                                    #             'filter_api_field': 'sex',
+                                                    #             'filter_api_field_value': '1',
+                                                    #             'filter_api_field_deviation_value': '0',
+                                                    #             'service_code': '123412',
+                                                    #             'description': 'Женщина',
+                                                    #             'max_buttons_peer_line': '',
+                                                    #             'services': {}},
+                                                    #     }},
                                                     'male': {
                                                         'button': 'Муж',
                                                         'command': '@@/gender:m',
@@ -180,7 +214,7 @@ def get_bot_menu_config_json():
                                                         'button': 'Город',
                                                         'command': '@@/city:!',
                                                         'filter': '',
-                                                        'filter_api_field': 'city,id',
+                                                        'filter_api_field': 'city',
                                                         'filter_api_field_value': '',
                                                         'filter_api_field_deviation_value': '0',
                                                         'service_code': '123417',
@@ -283,7 +317,6 @@ def get_bot_menu_config_json():
                                 'max_buttons_peer_line': '',
                                 'services': {}}}}}}}
     }
-
 
 # 'any gender': {
 #     'button': 'любой пол',
