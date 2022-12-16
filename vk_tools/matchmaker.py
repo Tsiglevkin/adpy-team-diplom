@@ -179,15 +179,17 @@ class Matchmaker:
                 res = False
                 break
             if vk_user_field_name == 'sex':
-                check_print_dev_values(vk_id=user_info['id'], filter_val=str(bot_val), filter_dev=bot_dev, res=res,
-                                       vk_val=str(vk_val) if str(vk_val) and str(vk_val).isdigit() else '0')
-                res = res and (str(vk_val) == str(vk_val))
+                res = res and check_print_dev_values(vk_id=user_info['id'], filter_val=str(bot_val), filter_dev=bot_dev,
+                                                     res=res,
+                                                     vk_val=str(vk_val) if str(vk_val) and str(
+                                                         vk_val).isdigit() else '0')
+                # res = res and vk_val) == str(vk_val)
             elif vk_user_field_name == 'city':
                 vk_value = field_value(vk_val, 'title')
                 filter_value = field_value(bot_val, 'title')
-                check_print_dev_values(vk_id=user_info['id'], vk_val=vk_value,
-                                       filter_val=filter_value, filter_dev=bot_dev, res=res)
-                res = res and vk_value == filter_value
+                res = res and check_print_dev_values(vk_id=user_info['id'], vk_val=vk_value,
+                                                     filter_val=filter_value, filter_dev=bot_dev, res=res)
+                # res = res and vk_value == filter_value
             elif vk_user_field_name == 'bdate':
                 # еще в процессе доработки :D
                 vk_value = correct_date(vk_val)
@@ -195,7 +197,7 @@ class Matchmaker:
                 filter_dev = str(bot_dev) if bot_dev and str(bot_dev).isdigit() else '0'
                 res = res and check_print_dev_values(vk_id=user_info['id'], vk_val=str(vk_value.year),
                                                      filter_val=str(filter_value.year), filter_dev=filter_dev, res=res)
-                res = res and vk_val == bot_val
+                # res = res and vk_val == bot_val
         print(f'Congratulations! Найден подходящий {user_info_(user_info)}'
               if res else f'\tПропускаем user{user_info["id"]}...')  #
         return res
