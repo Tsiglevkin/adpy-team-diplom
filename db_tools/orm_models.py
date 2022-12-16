@@ -1,4 +1,4 @@
-#
+# Модуль в процессе доработки
 
 from bot_config.config import get_config
 import sqlalchemy as sq

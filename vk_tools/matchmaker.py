@@ -5,9 +5,27 @@ import vk_api
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session
+# from fastapi import Depends, FastAPI
+
+from datetime import datetime, date
 
 from bot_config.config import get_config
 from db_tools import orm_models as orm
+
+
+# app = FastAPI()
+
+
+def check_dict_keys(dict_, keys, msg='данных'):
+    if not dict_ or not keys:
+        return []
+    for key in keys:
+        try:
+            dict_ = dict_[key]
+        except KeyError as key_err:
+            print(f'\nОшибка {msg}: отсутствует ключ {key_err}')
+            return []
+    return dict_
 
 
 def in_deviation(dev, val, check_val) -> bool:
@@ -34,6 +52,57 @@ def user_info_(user: dict = {}) -> str:
         field_value(user, 'city')['title'] if field_value(user, 'city') else '')
 
 
+def correct_date(date_string: str = '') -> datetime:
+    null_date = datetime.strptime('1.1.1000', "%d.%m.%Y")
+    if not date_string.strip():
+        return null_date
+    try:
+        bdate = datetime.strptime(date_string, "%d.%m.%Y")
+    except ValueError:
+        print('Некорректная дата или отсутствует!', date_string)
+        date_list = date_string.split('.', 3)
+        l = len(date_list)
+        print(date_list)
+        if l == 0:
+            return null_date
+        if l > 0:
+            if not date_list[0].isdigit():
+                date_list[0] = '1'
+            elif not (0 < int(date_list[0]) < 32):
+                date_list[0] = '1'
+        if l > 1:
+            if not date_list[1].isdigit():
+                date_list[1] = '1'
+            elif not (0 < int(date_list[1]) < 13):
+                date_list[1] = '1'
+        else:
+            date_list.append('1000')
+            l = 2
+        if l > 2:
+            if date_list[2].isdigit():
+                if not (1000 < int(date_list[2]) <= date.today().year):
+                    date_list[2] = '1000'
+            else:
+                date_list[2] = '1000'
+        else:
+            date_list.append('1000')
+        return datetime.strptime('.'.join(date_list), "%d.%m.%Y")
+    except Exception as other:
+        print('Ошибка обработки даты!', other)
+        return null_date
+    return bdate
+
+
+def check_print_dev_values(vk_id='', vk_val='0', filter_val='0', filter_dev='0', res: bool = False):
+    check_result = (int(filter_val) <= int(vk_val) <= int(filter_val) + int(filter_dev)
+                    ) or (int(filter_val) + int(filter_dev) <= int(vk_val) <= int(filter_val))
+    if filter_dev:
+        print(f'{res}, vk{vk_id}: {vk_val} -{check_result}- filter: {filter_val} с интервалом ({filter_dev})')
+    else:
+        print(f'{res}, vk{vk_id}: {vk_val} -{check_result}- filter: {filter_val}')
+    return check_result
+
+
 class Matchmaker:
     def __init__(self, db='db.cfg'):
         self._DB_CONFIG: dict = get_config('db', db)
@@ -48,16 +117,11 @@ class Matchmaker:
         db = self._DB_CONFIG
         return 'postgresql://{}:{}@{}/{}'.format(db["login"], db["password"], db["server"], db["dbase name"])
 
-    #
-    # @staticmethod
-    # def get_db(session_local):
-    #     db = session_local()
-    #     try:
-    #         yield db
-    #     finally:
-    #         db.close()
-
     def search_advisable_users(self, group_id='', client_id='', search_filter={},
+                               # db: Session = None,
+                               # vk_session: vk_api.vk_api.VkApi = None,
+                               # vk_tools: vk_api.tools.VkTools = None,
+                               # vk_api_methods: vk_api.vk_api.VkApiMethod = None
                                vk_tools: vk_api.tools.VkTools = None,
                                vk_api_methods: vk_api.vk_api.VkApiMethod = None) -> list:
         client_fields = 'sex,city,bdate,counters'
@@ -114,24 +178,26 @@ class Matchmaker:
             if not vk_val:
                 res = False
                 break
-            # res = res and vk_val == bot_val or (bot_dev and bot_dev.isdigit() and int(bot_dev)
-            #                                   and in_deviation(dev=int(bot_dev), val=bot_val, check_val=vk_val))
             if vk_user_field_name == 'sex':
-                res = res and (str(vk_val) == str(bot_val))
+                check_print_dev_values(vk_id=user_info['id'], filter_val=str(bot_val), filter_dev=bot_dev, res=res,
+                                       vk_val=str(vk_val) if str(vk_val) and str(vk_val).isdigit() else '0')
+                res = res and (str(vk_val) == str(vk_val))
             elif vk_user_field_name == 'city':
                 vk_value = field_value(vk_val, 'title')
                 filter_value = field_value(bot_val, 'title')
-                print('{}, vk{}: {} -{}- filter: {}'.format(
-                    res, user_info['id'], vk_value, vk_value == filter_value, filter_value))
+                check_print_dev_values(vk_id=user_info['id'], vk_val=vk_value,
+                                       filter_val=filter_value, filter_dev=bot_dev, res=res)
                 res = res and vk_value == filter_value
-                print(res, vk_val, )
             elif vk_user_field_name == 'bdate':
+                # еще в процессе доработки :D
+                vk_value = correct_date(vk_val)
+                filter_value = correct_date(bot_val)
+                filter_dev = str(bot_dev) if bot_dev and str(bot_dev).isdigit() else '0'
+                res = res and check_print_dev_values(vk_id=user_info['id'], vk_val=str(vk_value.year),
+                                                     filter_val=str(filter_value.year), filter_dev=filter_dev, res=res)
                 res = res and vk_val == bot_val
-            else:
-                pass
-        print(f'Congratulations-2! Найден подходящий {user_info_(user_info)}'
-              if res else f'\tПропускаем user{user_info["id"]}...')
-        #
+        print(f'Congratulations! Найден подходящий {user_info_(user_info)}'
+              if res else f'\tПропускаем user{user_info["id"]}...')  #
         return res
 
     def get_standard_filter(self, search_filter={}) -> dict:
