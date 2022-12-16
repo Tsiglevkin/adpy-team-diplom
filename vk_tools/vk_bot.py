@@ -11,7 +11,7 @@ from vk_api.utils import get_random_id
 
 from bot_config.config import get_config
 from vk_tools.vk_bot_menu import VkBotMenu
-from vk_tools.matchmaker import Matchmaker, field_value
+from vk_tools.matchmaker import Matchmaker, get_standard_filter
 
 
 def split_str_to_list(string=' ', splitter=','):
@@ -168,7 +168,7 @@ class VkBot(Matchmaker):
                 elif text == menu['advanced']['command'].lower() or text == menu['advanced']['button'].lower():
                     self.start_mode(event, 'Модуль в разработке,\n{}!'.format(self.get_user_name(event)))
                 elif self.exit(event):
-                    std_filter = self.get_standard_filter(menu)['button']
+                    std_filter = get_standard_filter(menu)['button']
                     print('{}:\t{}'.format(self.menu.button,
                                            std_filter if std_filter else 'Стандартный фильтр не задан...'))
                 else:
@@ -217,7 +217,7 @@ class VkBot(Matchmaker):
                     self.start_mode(event, '...And hello again,\n{}!'.format(self.get_user_name(event)))
                 elif text == menu['advisable']['command'].lower() or text == menu['advisable']['button'].lower():
                     search_filter = menu['filter']['services']
-                    std_filter = self.get_standard_filter(search_filter)['button']
+                    std_filter = get_standard_filter(search_filter)['button']
                     self.menu.switch('advisable')
                     self.start_mode(event=event,
                                     message='...And hello again,\n{}!\nИщем по фильтрам\n{}.\t'.format(
@@ -384,7 +384,6 @@ class VkBot(Matchmaker):
         msg += f'\nот: {self.get_user_title(event)}'
         msg += f' *--- {event.message["text"]}'
         print(msg)
-        # print('*---', event.from_user, event.from_chat, event.from_group, event.from_me)
         return msg
 
     def get_user(self, event, name_case='nom', fields="city"):
