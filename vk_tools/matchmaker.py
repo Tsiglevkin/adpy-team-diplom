@@ -16,6 +16,9 @@ def is_advisable_user_by_standard(user_info={}, client_info={}, bot_filter={}) -
     if not (user_info and client_info and bot_filter):
         print('Недостаточно параметров! group, client, filter, vk_api_methods')
         return False
+    if user_info["id"] == client_info["id"]:
+        print(f'\nСамого клиента user{user_info["id"]} не рассматриваем, пропускаем!\n')
+        return False
     res = not user_info['is_closed']
     if not res:
         return res
@@ -82,51 +85,9 @@ def check_print_person_filter(field_name, user_info, vk_val, filter_val, filter_
     return check_result
 
 
-def get_standard_filter(search_filter={}) -> dict:
-    if not search_filter:
-        return {}
-    try:
-        std_filter: dict = search_filter['standard']['services']
-        std = {}
-        for field in ['button', 'filter_api_field']:
-            std[field] = ', '.join(
-                std_filter[field_name][field] for field_name in std_filter if std_filter[field_name]['filter'])
-        std['filter_bot_fields'] = dict((field_name, std_filter[field_name]) for field_name in std_filter
-                                        if std_filter[field_name]['filter'])
-        # pprint(std)
-        return std
-    except KeyError as key_err:
-        print(f'\nОшибка данных: отсутствует ключ {key_err}\t( Matchmaker.get_standard_filter() )')
-        return {}
-    except Exception as other:
-        print('\nОшибка в Matchmaker.get_standard_filter():' + f'\n\t{other}')
-        return {}
-
-
-def refresh_group_users(group_id='', db: Session = None, vk_tools: vk_api.tools.VkTools = None) -> list:
-    if not (db and group_id and vk_tools):
-        print('Недостаточно параметров! db, group, tools')
-        return []
-    # db = self.SessionLocal()
-    print('\nRecording new users of VK group...')
-    vk_users_added = []
-    while True:
-        vk_group_users_right_now = vk_tools.get_all('groups.getMembers', 1000, {'group_id': group_id})['items']
-        pprint(vk_group_users_right_now)
-        vk_users_added += list(vk_id for vk_id in vk_group_users_right_now if
-                               not db.query(orm.VkGroup).filter(orm.VkGroup.vk_id == vk_id).first())
-        db.add_all(orm.VkGroup(vk_id=vk_id) for vk_id in vk_users_added)
-        print('Added  to the VK group:', vk_users_added if vk_users_added else 'has no new users!')
-        break
-    db.commit()
-    # db.close()
-    print('Congratulations! The updated list of users of the group has been read and recorded in the database.')
-    return vk_users_added
-
-
 def in_deviation(val_dev, val, check_val) -> bool:
     dev = val + val_dev
-    return val <= check_val <= val_dev + dev or val + dev <= check_val <= val
+    return val < check_val <= val_dev + dev or val + dev <= check_val < val
 
 
 def correct_date(date_string: str = '') -> datetime:
@@ -167,6 +128,48 @@ def correct_date(date_string: str = '') -> datetime:
         print('\tОшибка обработки даты!', other)
         return null_date
     return bdate
+
+
+def get_standard_filter(search_filter={}) -> dict:
+    if not search_filter:
+        return {}
+    try:
+        std_filter: dict = search_filter['standard']['services']
+        std = {}
+        for field in ['button', 'filter_api_field']:
+            std[field] = ', '.join(
+                std_filter[field_name][field] for field_name in std_filter if std_filter[field_name]['filter'])
+        std['filter_bot_fields'] = dict((field_name, std_filter[field_name]) for field_name in std_filter
+                                        if std_filter[field_name]['filter'])
+        # pprint(std)
+        return std
+    except KeyError as key_err:
+        print(f'\nОшибка данных: отсутствует ключ {key_err}\t( Matchmaker.get_standard_filter() )')
+        return {}
+    except Exception as other:
+        print('\nОшибка в Matchmaker.get_standard_filter():' + f'\n\t{other}')
+        return {}
+
+
+def refresh_group_users(group_id='', db: Session = None, vk_tools: vk_api.tools.VkTools = None) -> list:
+    if not (db and group_id and vk_tools):
+        print('Недостаточно параметров! db, group, tools')
+        return []
+    # db = self.SessionLocal()
+    print('\nRecording new users of VK group...')
+    vk_users_added = []
+    while True:
+        vk_group_users_right_now = vk_tools.get_all('groups.getMembers', 1000, {'group_id': group_id})['items']
+        pprint(vk_group_users_right_now)
+        vk_users_added += list(vk_id for vk_id in vk_group_users_right_now if
+                               not db.query(orm.VkGroup).filter(orm.VkGroup.vk_id == vk_id).first())
+        db.add_all(orm.VkGroup(vk_id=vk_id) for vk_id in vk_users_added)
+        print('Added  to the VK group:', vk_users_added if vk_users_added else 'has no new users!')
+        break
+    db.commit()
+    # db.close()
+    print('Congratulations! The updated list of users of the group has been read and recorded in the database.')
+    return vk_users_added
 
 
 def user_info_(user: dict = {}) -> str:
