@@ -77,8 +77,6 @@ class StandardChecker(VkUserChecker):
 
     def is_advisable_user_by_standard(self, vk_id: str) -> bool:
         super(StandardChecker, self).is_advisable_user_by_standard(vk_id)
-        # self.user_id = vk_id
-        # self.user_info = self.get_user_info()
         bot_filter: dict = get_standard_filter(self.search_filter)
         if not self.get_control_attr(bot_filter):
             return False

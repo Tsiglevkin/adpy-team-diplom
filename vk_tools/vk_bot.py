@@ -54,7 +54,7 @@ class VkBot:
         self.vk_api_methods = self.vk_session.get_api()  # vk_api.vk_api.VkApiMethod
         print(f"Создан объект бота! (id={self.vk_session.app_id})")
 
-    def get_keyboard(self, callback=False, inline=False, one_time=True) -> dict:
+    def get_keyboard(self, callback=False, inline=False, one_time=False) -> dict:
         menu = self.menu.services
         keyboard = VkKeyboard(inline=inline, one_time=False if inline else one_time)
         buttons = self.menu.get_buttons()
