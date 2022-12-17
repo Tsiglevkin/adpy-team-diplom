@@ -5,11 +5,11 @@ from vk_api.vk_api import VkApiMethod
 
 
 class AdvancedChecker(VkUserChecker):
-    _skill = 'A matchmaker advanced Search Engine'
+    _skill = 'An advanced Search Engine of the matchmaker'
 
     def __init__(self, client_id: str, api_methods: VkApiMethod, search_filter: dict = {}):
         super(AdvancedChecker, self).__init__(client_id, api_methods, search_filter, self._skill)
 
     def is_advisable_user(self, vk_id: str) -> bool:
         super(AdvancedChecker, self).is_advisable_user(vk_id)
-        return False
+        return True

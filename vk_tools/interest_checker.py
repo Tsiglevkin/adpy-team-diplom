@@ -12,4 +12,4 @@ class InterestChecker(VkUserChecker):
 
     def is_advisable_user(self, vk_id: str) -> bool:
         super(InterestChecker, self).is_advisable_user(vk_id)
-        return False
+        return True
