@@ -1,18 +1,20 @@
 #
 
-
+import json
 from random import randrange
 from pprint import pprint
 
 import requests
 import vk_api
+from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 
 from bot_config.config import get_config
 from vk_tools.vk_bot_menu import VkBotMenu
-from vk_tools.standard_checker import get_standard_filter
+# from vk_tools.matchmaker import Matchmaker
+from vk_tools.standard_checker import StandardChecker, get_standard_filter
 
 
 def split_str_to_list(string=' ', splitter=','):
@@ -80,6 +82,8 @@ class VkBot:
         return keyboard.get_keyboard()
 
     def start(self):
+        # print()
+        # pprint(self.__dict__)   # -----------------
         # Работа с сообщениями
         while True:
             longpoll = VkBotLongPoll(self.vk_session, group_id=self.group_id)
@@ -267,8 +271,10 @@ class VkBot:
         menu = self.menu.services
         greetings = split_str_to_list(self._BOT_CONFIG['greetings'])
         farewells = split_str_to_list(self._BOT_CONFIG['farewells'])
+        # if event.type == VkEventType.MESSAGE_NEW and event.to_me:
         if event.type == VkBotEventType.MESSAGE_NEW:
             self.print_message_description(event)
+            # text = event.text.lower()
             text = event.message['text'].lower()
             # Oтветы:
             if text:
@@ -339,6 +345,7 @@ class VkBot:
 
     def exit(self, event, callback=False) -> bool:
         menu = self.menu.services
+        # text = event.text.lower()
         text = event.message['text'].lower()
         if text == menu['exit']['button'].lower() or text == menu['exit']['command'].lower():
             message = '{},\nсервис "{}" закрыт!'.format(self.get_user_name(event), self.menu.button)
@@ -382,6 +389,7 @@ class VkBot:
         msg += f'\nот: {self.get_user_title(event)}'
         msg += f' *--- {event.message["text"]}'
         print(msg)
+        # print('*---', event.from_user, event.from_chat, event.from_group, event.from_me)
         return msg
 
     def get_user(self, event, name_case='nom', fields="city"):
@@ -403,3 +411,4 @@ class VkBot:
         """ Получаем кратко пользователя"""
         user = self.get_user(event, 'gen')
         return f'{user["last_name"]} {user["first_name"]} (id = {event.message["from_id"]})'
+        #        f'{user["city"]["title"]} (id = {user_id})'

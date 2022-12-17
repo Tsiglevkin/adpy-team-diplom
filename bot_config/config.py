@@ -54,7 +54,7 @@ def write_json_file(dict_, file):
 def get_db_config_json():
     return {
         'login': 'postgres',
-        'password': 'postgres',
+        'password': '4sql%pg',
         'dbase name': 'vkinder',
         'server': 'localhost:5432',
         'scheme': 'public',

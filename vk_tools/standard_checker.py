@@ -19,10 +19,9 @@ def get_standard_filter(search_filter={}) -> dict:
         return std
     except KeyError as key_err:
         print(f'\nОшибка данных: отсутствует ключ {key_err}\t( Matchmaker.get_standard_filter() )')
-        return {}
     except Exception as other:
         print('\nОшибка в Matchmaker.get_standard_filter():' + f'\n\t{other}')
-        return {}
+    return {}
 
 
 def in_int_deviation(val_dev: int, val: int, check_val: int) -> bool:
