@@ -91,7 +91,7 @@ def get_bot_menu_config_json():
                 'services': {
                     'matchmaker': {
                         'button': 'НЯША',
-                        'command': '@@/!',
+                        'command': '/!',
                         'filter': '',
                         'service_code': '11',
                         'description': 'мои любимчики',
@@ -99,7 +99,7 @@ def get_bot_menu_config_json():
                         'services': {
                             'search': {
                                 'button': 'НАЙТИ',
-                                'command': '@@/?',
+                                'command': '/?',
                                 'filter': '',
                                 'service_code': '111',
                                 'description': 'поиск интересных пиплов',
@@ -107,7 +107,7 @@ def get_bot_menu_config_json():
                                 'services': {
                                     'filter': {
                                         'button': 'Фильтр',
-                                        'command': '@@/f',
+                                        'command': '/f',
                                         'filter': '',
                                         'service_code': '1231',
                                         'description': 'Фильтры поиска',
@@ -115,7 +115,7 @@ def get_bot_menu_config_json():
                                         'services': {
                                             'standard': {
                                                 'button': 'Стандартный',
-                                                'command': '@@/>',
+                                                'command': '/>',
                                                 'filter': '',
                                                 'service_code': '12311',
                                                 'description': 'Стандартный поиск',
@@ -123,29 +123,29 @@ def get_bot_menu_config_json():
                                                 'services': {
                                                     'younger': {
                                                         'button': 'моложе',
-                                                        'command': '@@/age:-',
+                                                        'command': '/y',
                                                         'filter': '',
                                                         'filter_api_field': 'bdate',
                                                         'filter_api_field_value': '',
-                                                        'filter_api_field_deviation_value': '1000000',
+                                                        'filter_api_field_deviation_value': '10000',
                                                         'service_code': '123414',
                                                         'description': 'Моложе',
                                                         'max_buttons_peer_line': '',
                                                         'services': {}},
                                                     'older': {
                                                         'button': 'старше',
-                                                        'command': '@@/age:+',
+                                                        'command': '/o',
                                                         'filter': '',
                                                         'filter_api_field': 'bdate',
                                                         'filter_api_field_value': '',
-                                                        'filter_api_field_deviation_value': '-1000000',
+                                                        'filter_api_field_deviation_value': '-10000',
                                                         'service_code': '123415',
                                                         'description': 'Старше',
                                                         'max_buttons_peer_line': '',
                                                         'services': {}},
                                                     'peers': {
                                                         'button': 'ровесники',
-                                                        'command': '@@/age:?',
+                                                        'command': '/p',
                                                         'filter': '',
                                                         'filter_api_field': 'bdate',
                                                         'filter_api_field_value': '',
@@ -190,7 +190,7 @@ def get_bot_menu_config_json():
                                                     #     }},
                                                     'male': {
                                                         'button': 'Муж',
-                                                        'command': '@@/gender:m',
+                                                        'command': '/m',
                                                         'filter': '',
                                                         'filter_api_field': 'sex',
                                                         'filter_api_field_value': '2',
@@ -201,7 +201,7 @@ def get_bot_menu_config_json():
                                                         'services': {}},
                                                     'female': {
                                                         'button': 'Жен',
-                                                        'command': '@@/gender:f',
+                                                        'command': '/f',
                                                         'filter': '',
                                                         'filter_api_field': 'sex',
                                                         'filter_api_field_value': '1',
@@ -212,7 +212,7 @@ def get_bot_menu_config_json():
                                                         'services': {}},
                                                     'city': {
                                                         'button': 'Город',
-                                                        'command': '@@/city:!',
+                                                        'command': '/city',
                                                         'filter': '',
                                                         'filter_api_field': 'city',
                                                         'filter_api_field_value': '',
@@ -223,7 +223,7 @@ def get_bot_menu_config_json():
                                                         'services': {}},
                                                     'exit': {
                                                         'button': 'Сохранить',
-                                                        'command': '@@/',
+                                                        'command': '/:',
                                                         'filter': '',
                                                         'filter_api_field': '',
                                                         'filter_api_field_value': '',
@@ -235,7 +235,7 @@ def get_bot_menu_config_json():
                                                 }},
                                             'interests': {
                                                 'button': 'По интересам',
-                                                'command': '@@/+',
+                                                'command': '/!',
                                                 'filter': '',
                                                 'service_code': '12312',
                                                 'description': 'Поиск по интересам',
@@ -243,7 +243,7 @@ def get_bot_menu_config_json():
                                                 'services': {}},
                                             'advanced': {
                                                 'button': 'Продвинутый',
-                                                'command': '@@/!',
+                                                'command': '/++',
                                                 'filter': '',
                                                 'service_code': '12313',
                                                 'description': 'Продвинутый поиск',
@@ -251,7 +251,7 @@ def get_bot_menu_config_json():
                                                 'services': {}},
                                             'exit': {
                                                 'button': 'Применить фильтр',
-                                                'command': '@@/',
+                                                'command': '/:',
                                                 'filter': '',
                                                 'service_code': '12314',
                                                 'description': 'Выход из режима фильтров поиска',
@@ -260,7 +260,7 @@ def get_bot_menu_config_json():
                                         }},
                                     'advisable': {
                                         'button': 'ПОИСК',
-                                        'command': '@@/?',
+                                        'command': '/?',
                                         'filter': '',
                                         'service_code': '1232',
                                         'description': 'Рекомендуем',
@@ -268,7 +268,7 @@ def get_bot_menu_config_json():
                                         'services': {
                                             'next': {
                                                 'button': 'Следующий',
-                                                'command': '@@/>',
+                                                'command': '/>',
                                                 'filter': '',
                                                 'service_code': '12321',
                                                 'description': '',
@@ -276,7 +276,7 @@ def get_bot_menu_config_json():
                                                 'services': {}},
                                             'save': {
                                                 'button': 'Сохранить',
-                                                'command': '@@/+',
+                                                'command': '/+',
                                                 'filter': '',
                                                 'service_code': '12322',
                                                 'description': '',
@@ -284,7 +284,7 @@ def get_bot_menu_config_json():
                                                 'services': {}},
                                             'exit': {
                                                 'button': 'Выход',
-                                                'command': '@@/',
+                                                'command': '/:',
                                                 'filter': '',
                                                 'service_code': '12323',
                                                 'description': 'Выход из режима просмотра результатов поиска',
@@ -293,7 +293,7 @@ def get_bot_menu_config_json():
                                         }},
                                     'exit': {
                                         'button': 'Выход',
-                                        'command': '@@/',
+                                        'command': '/:',
                                         'filter': '',
                                         'service_code': '1233',
                                         'description': 'Выход из режима поиска подходящих пользователей',
@@ -302,7 +302,7 @@ def get_bot_menu_config_json():
                                 }},
                             'print': {
                                 'button': 'Список',
-                                'command': '@@/!',
+                                'command': '/!',
                                 'filter': '',
                                 'service_code': '112',
                                 'description': 'СПИСОК моих пиплов',
@@ -310,19 +310,10 @@ def get_bot_menu_config_json():
                                 'services': {}},
                             'exit': {
                                 'button': 'Выход',
-                                'command': '@@/',
+                                'command': '/:',
                                 'filter': '',
                                 'service_code': '113',
                                 'description': '',
                                 'max_buttons_peer_line': '',
                                 'services': {}}}}}}}
     }
-
-# 'any gender': {
-#     'button': 'любой пол',
-#     'command': '@@/gender:?',
-#     'filter': '',
-#     'service_code': '123413',
-#     'description': '',
-#     'max_buttons_peer_line': '',
-#     'services': {}},

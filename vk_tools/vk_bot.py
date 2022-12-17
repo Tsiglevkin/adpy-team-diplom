@@ -11,7 +11,7 @@ from vk_api.utils import get_random_id
 
 from bot_config.config import get_config
 from vk_tools.vk_bot_menu import VkBotMenu
-from vk_tools.matchmaker import Matchmaker, get_standard_filter
+from vk_tools.standard_checker import get_standard_filter
 
 
 def split_str_to_list(string=' ', splitter=','):
@@ -40,18 +40,17 @@ def filter_switch_2(switch_filter, filter_2, filter_3):
         switch_filter['filter'] = not switch_filter['filter']
 
 
-class VkBot(Matchmaker):
+class VkBot:
     # виды callback-кнопок
     __callback_types__ = ("show_snackbar", "open_link", "open_app")
 
     def __init__(self, bot='bot.cfg'):
-        super(VkBot, self).__init__()
         self._BOT_CONFIG: dict = get_config()
         self.group_id = self._BOT_CONFIG['group_id']
         self.menu = VkBotMenu()
         self.vk_session = vk_api.VkApi(token=self._BOT_CONFIG['token'])  # vk_api.vk_api.VkApi
         self.vk_tools = vk_api.VkTools(self.vk_session)   # vk_api.tools.VkTools
-        self.vk_api = self.vk_session.get_api()  # vk_api.vk_api.VkApiMethod
+        self.vk_api_methods = self.vk_session.get_api()  # vk_api.vk_api.VkApiMethod
         print(f"Создан объект бота! (id={self.vk_session.app_id})")
 
     def get_keyboard(self, callback=False, inline=False, one_time=True) -> dict:
@@ -110,6 +109,7 @@ class VkBot(Matchmaker):
             text = event.message['text'].lower()
             # Oтветы:
             try:
+                self.menu.filter = True
                 if event.from_chat:
                     self.send_msg_use_bot_dialog(event)
                 elif text == menu['male']['command'].lower() or text == menu['male']['button'].lower():
@@ -133,6 +133,7 @@ class VkBot(Matchmaker):
                 elif self.exit(event):
                     pass
                 else:
+                    self.menu.filter = False
                     if not event.from_chat:
                         self.start_mode(event, 'Не понимаю...')
                 msg = self.send_filter(event, 'Настроен Фильтр для поиска\t'
@@ -168,7 +169,7 @@ class VkBot(Matchmaker):
                 elif text == menu['advanced']['command'].lower() or text == menu['advanced']['button'].lower():
                     self.start_mode(event, 'Модуль в разработке,\n{}!'.format(self.get_user_name(event)))
                 elif self.exit(event):
-                    std_filter = get_standard_filter(menu)['button']
+                    std_filter = get_standard_filter(menu)['buttons']
                     print('{}:\t{}'.format(self.menu.button,
                                            std_filter if std_filter else 'Стандартный фильтр не задан...'))
                 else:
@@ -217,16 +218,14 @@ class VkBot(Matchmaker):
                     self.start_mode(event, '...And hello again,\n{}!'.format(self.get_user_name(event)))
                 elif text == menu['advisable']['command'].lower() or text == menu['advisable']['button'].lower():
                     search_filter = menu['filter']['services']
-                    std_filter = get_standard_filter(search_filter)['button']
+                    std_filter = get_standard_filter(search_filter)['buttons']
                     self.menu.switch('advisable')
                     self.start_mode(event=event,
                                     message='...And hello again,\n{}!\nИщем по фильтрам\n{}.\t'.format(
                                         self.get_user_name(event),
                                         std_filter if std_filter else 'Стандартный фильтр не задан...'))
 
-                    self.search_advisable_users(group_id=self.group_id, client_id=event.message['from_id'],
-                                                search_filter=search_filter,
-                                                vk_tools=self.vk_tools, vk_api_methods=self.vk_api)
+                    self.search_advisable_users(client_id=event.message['from_id'], search_filter=search_filter)
                 elif self.exit(event):
                     pass
                 else:
@@ -236,6 +235,9 @@ class VkBot(Matchmaker):
                 self.my_except(event, key_err, f'Попытка взять значение по ошибочному-2 ключу {key_err}', menu)
             except Exception as other:
                 self.my_except(event, other)
+
+    def search_advisable_users(self, client_id, search_filter):
+        print('Модуль в разработке')
 
     def matchmaker_mode_events(self, event):
         menu = self.menu.services
@@ -340,7 +342,6 @@ class VkBot(Matchmaker):
 
     def exit(self, event, callback=False) -> bool:
         menu = self.menu.services
-        # text = event.text.lower()
         text = event.message['text'].lower()
         if text == menu['exit']['button'].lower() or text == menu['exit']['command'].lower():
             message = '{},\nсервис "{}" закрыт!'.format(self.get_user_name(event), self.menu.button)
@@ -384,12 +385,11 @@ class VkBot(Matchmaker):
         msg += f'\nот: {self.get_user_title(event)}'
         msg += f' *--- {event.message["text"]}'
         print(msg)
-        return msg
 
     def get_user(self, event, name_case='nom', fields="city"):
         """ Получаем пользователя """
         user_id = event.message['from_id']
-        return self.vk_api.users.get(user_ids=user_id, fields=fields, name_case=name_case)[0]
+        return self.vk_api_methods.users.get(user_ids=user_id, fields=fields, name_case=name_case)[0]
 
     def get_user_name(self, event, name_case='nom'):
         """ Получаем имя пользователя"""

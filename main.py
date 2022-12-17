@@ -1,7 +1,8 @@
 #
 
-from vk_tools.vk_bot import VkBot
+from vk_tools.matchmaker import Matchmaker
 
 if __name__ == '__main__':
-    bot = VkBot('bot.cfg')
+    bot = Matchmaker()
     bot.start()
+
