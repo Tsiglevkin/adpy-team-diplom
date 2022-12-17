@@ -2,6 +2,7 @@
 
 from datetime import datetime, date
 from vk_api.vk_api import VkApi, VkApiMethod
+from vk_tools.checker import VkUserChecker
 
 
 def get_standard_filter(search_filter={}) -> dict:
@@ -68,40 +69,17 @@ def correct_date(date_string: str) -> datetime:
     return bdate
 
 
-class StandardChecker:
+class StandardChecker(VkUserChecker):
+    _skill = 'A matchmaker standard Search Engine'
+
     def __init__(self, client_id: str, api_methods: VkApiMethod, search_filter: dict = {}):
-        self.vk_api_methods = api_methods
-        self.search_filter = search_filter
-        self.api_fields = 'sex,city,bdate,counters'
-        self.client_id = client_id
-        self.client_info = self.get_client_info()
-        self.user_id = None
-        self.user_info = None
-        print('A matchmaker standard Search Engine has been created')
-
-    def set_search_filter(self, search_filter: dict):
-        self.search_filter = search_filter
-
-    def get_client_info(self, client_info_fields='sex,city,bdate,counters'):
-        return self.vk_api_methods.users.get(user_ids=self.client_id, fields=client_info_fields)[0]
-
-    def get_user_info(self, user_info_fields='sex,city,bdate,counters') -> dict:
-        return self.vk_api_methods.users.get(user_ids=self.user_id, fields=user_info_fields)[0]
-
-    def __str__(self):
-        user = self.get_user_info()
-        return "user{}: {} {} ({}) {} {}".format(
-            user['id'], user.get('first_name', ''), user.get('last_name', ''),
-            ['', 'жен', 'муж'][int(user.get('sex', ''))] if user.get('sex', '') else '',
-            user.get('bdate', ''),
-            user.get('city', '')['title'] if user.get('city', '') else '')
+        super(StandardChecker, self).__init__(client_id, api_methods, search_filter, self._skill)
 
     def is_advisable_user_by_standard(self, vk_id: str) -> bool:
-        self.user_id = vk_id
-        self.user_info = self.get_user_info()
+        super(StandardChecker, self).is_advisable_user_by_standard(vk_id)
+        # self.user_id = vk_id
+        # self.user_info = self.get_user_info()
         bot_filter: dict = get_standard_filter(self.search_filter)
-        client_info = self.get_client_info()
-        user_info = self.get_user_info()
         if not self.get_control_attr(bot_filter):
             return False
         person_filter = dict([api_field, False] for api_field in bot_filter.get('filter_api_fields', '').split(', '))
@@ -111,8 +89,8 @@ class StandardChecker:
             vk_field_name = bot_field.get('filter_api_field', '')
             if person_filter[vk_field_name]:
                 continue
-            vk_val = user_info.get(vk_field_name, '')
-            client_val = client_info.get(vk_field_name, '')
+            vk_val = self.user_info.get(vk_field_name, '')
+            client_val = self.client_info.get(vk_field_name, '')
             filter_val = bot_field.get('filter_api_field_value', '')
             filter_dev = bot_field.get('filter_api_field_deviation_value', '0')
             print('ПРОВЕРКА:', bot_field_name, '=', filter_val)  # -------------------------------------

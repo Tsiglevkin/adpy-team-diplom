@@ -58,21 +58,18 @@ class Matchmaker(VkBot):
         print('Deleted records in Advisable')
         if search_mode != "No mass requests":
             pass
-        if True or search_filter['standard']['filter']:
-            #        ----------  Стандартный поиск  -----------
+        #        ----------  Стандартный поиск  -----------
+        bot_filter: dict = get_standard_filter(search_filter=search_filter)
+        print('\n------ {}:\t'.format(search_filter['standard']['description'].strip().upper()), end='')
+        if bot_filter['buttons']:
+            print(bot_filter['buttons'])
             self.checker = StandardChecker(client_id=client_id, search_filter=search_filter,
                                            api_methods=self.vk_api_methods)
-            bot_filter: dict = get_standard_filter(search_filter=search_filter)
-            print('\n------ {}:\t'.format(search_filter['standard']['description'].strip().upper()), end='')
-            if bot_filter['buttons']:
-                print(bot_filter['buttons'])
-                db.add_all(orm.Advisable(vk_id=user.vk_id) for user in db.query(orm.VkGroup).all()
-                           if self.checker.is_advisable_user_by_standard(vk_id=user.vk_id))
-            else:
-                print('Стандартный фильтр не задан...')
-                db.add_all(orm.Advisable(vk_id=user.vk_id) for user in db.query(orm.VkGroup).all())
+            db.add_all(orm.Advisable(vk_id=user.vk_id) for user in db.query(orm.VkGroup).all()
+                       if self.checker.is_advisable_user_by_standard(vk_id=user.vk_id))
         else:
-            pass
+            print('Стандартный фильтр не задан...')
+            db.add_all(orm.Advisable(vk_id=user.vk_id) for user in db.query(orm.VkGroup).all())
         db.commit()
         advisable_users = list(user.vk_id for user in db.query(orm.Advisable).all())
         print(f'\n{advisable_users} --> was pulled into Advisable')

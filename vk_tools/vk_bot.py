@@ -1,5 +1,6 @@
 #
 
+
 from random import randrange
 from pprint import pprint
 
@@ -109,7 +110,6 @@ class VkBot:
             text = event.message['text'].lower()
             # Oтветы:
             try:
-                self.menu.filter = True
                 if event.from_chat:
                     self.send_msg_use_bot_dialog(event)
                 elif text == menu['male']['command'].lower() or text == menu['male']['button'].lower():
@@ -133,7 +133,6 @@ class VkBot:
                 elif self.exit(event):
                     pass
                 else:
-                    self.menu.filter = False
                     if not event.from_chat:
                         self.start_mode(event, 'Не понимаю...')
                 msg = self.send_filter(event, 'Настроен Фильтр для поиска\t'
@@ -268,10 +267,8 @@ class VkBot:
         menu = self.menu.services
         greetings = split_str_to_list(self._BOT_CONFIG['greetings'])
         farewells = split_str_to_list(self._BOT_CONFIG['farewells'])
-        # if event.type == VkEventType.MESSAGE_NEW and event.to_me:
         if event.type == VkBotEventType.MESSAGE_NEW:
             self.print_message_description(event)
-            # text = event.text.lower()
             text = event.message['text'].lower()
             # Oтветы:
             if text:
@@ -385,6 +382,7 @@ class VkBot:
         msg += f'\nот: {self.get_user_title(event)}'
         msg += f' *--- {event.message["text"]}'
         print(msg)
+        return msg
 
     def get_user(self, event, name_case='nom', fields="city"):
         """ Получаем пользователя """
