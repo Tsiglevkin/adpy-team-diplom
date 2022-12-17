@@ -1,21 +1,14 @@
 #
 from pprint import pprint
-import vk_api
 
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session
-# from fastapi import Depends, FastAPI
-
-from datetime import datetime, date
 
 from vk_tools.vk_bot import VkBot
 from vk_tools.standard_checker import StandardChecker, get_standard_filter
 from bot_config.config import get_config
 from db_tools import orm_models as orm
-
-
-# app = FastAPI()
 
 
 class Matchmaker(VkBot):
@@ -34,15 +27,6 @@ class Matchmaker(VkBot):
     def get_DSN(self) -> str:
         db = self._DB_CONFIG
         return 'postgresql://{}:{}@{}/{}'.format(db["login"], db["password"], db["server"], db["dbase name"])
-
-    #
-    # @staticmethod
-    # def get_db(session_local):
-    #     db = session_local()
-    #     try:
-    #         yield db
-    #     finally:
-    #         db.close()
 
     def refresh_group_users(self, db: Session = None) -> list:
         if not (db and self.group_id and self.vk_tools):
@@ -75,7 +59,6 @@ class Matchmaker(VkBot):
         print('Deleted records in Advisable')
         if search_mode != "No mass requests":
             pass
-        # pprint(search_filter['standard'])   # -------------------
         #        ----------  Стандартный поиск  -----------
         bot_filter: dict = get_standard_filter(search_filter=search_filter)
         print('\n------ {}:\t'.format(search_filter['standard']['description'].strip().upper()), end='')
