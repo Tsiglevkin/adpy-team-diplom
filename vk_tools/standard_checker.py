@@ -75,7 +75,7 @@ class StandardChecker(VkUserChecker):
     def __init__(self, client_id: str, api_methods: VkApiMethod, search_filter: dict = {}):
         super(StandardChecker, self).__init__(client_id, api_methods, search_filter, self._skill)
 
-    def is_advisable_user_by_standard(self, vk_id: str) -> bool:
+    def is_advisable_user(self, vk_id: str) -> bool:
         super(StandardChecker, self).is_advisable_user_by_standard(vk_id)
         bot_filter: dict = get_standard_filter(self.search_filter)
         if not self.get_control_attr(bot_filter):
@@ -101,12 +101,10 @@ class StandardChecker(VkUserChecker):
             if not vk_val:
                 res = False
                 break
-            check_result = self._check_print_person_filter(field_name=vk_field_name, vk_val=vk_val,
-                                                           filter_val=filter_val, filter_deviation=filter_dev)
+            check_result = self._check_print_person_filter(vk_field_name, vk_val, filter_val, filter_dev)
             person_filter[vk_field_name] = person_filter[vk_field_name] or check_result
-            if person_filter[vk_field_name]:
-                print(f'\tПРОШЁЛ по фильтру {vk_field_name.upper()} бродяга user{vk_id}!')
-        return self.check_print_filters(filters=person_filter, res=res, vk_id=vk_id)
+            self.check_print_win_msg(person_filter, vk_field_name, vk_id)
+        return self.check_print_filters(person_filter, res, vk_id)
 
     def check_print_filters(self, filters, res, vk_id):
         for field_name, field_filter in filters.items():
@@ -119,7 +117,12 @@ class StandardChecker(VkUserChecker):
               if res else f'\tПропускаем user{vk_id}...')
         return res
 
-    def get_control_attr(self, bot_filter):
+    def check_print_win_msg(self, filters, vk_field_name, vk_id):
+        if filters[vk_field_name]:
+            print(f'\tПРОШЁЛ по фильтру {vk_field_name.upper()} бродяга user{vk_id}!')
+        return filters[vk_field_name]
+
+    def get_control_attr_msg(self, bot_filter):
         if not (self.user_info and self.client_info and bot_filter):
             print('Недостаточно параметров! user, client, filter')
             return False

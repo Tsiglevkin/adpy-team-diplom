@@ -1,7 +1,6 @@
 #
 
 from abc import ABC, abstractmethod
-
 from vk_api.vk_api import VkApiMethod
 
 
@@ -37,6 +36,6 @@ class VkUserChecker(ABC):
             user.get('city', '')['title'] if user.get('city', '') else '')
 
     @abstractmethod
-    def is_advisable_user_by_standard(self, vk_id: str) -> bool:
+    def is_advisable_user(self, vk_id: str) -> bool:
         self.user_id = vk_id
         self.user_info = self.get_user_info()
