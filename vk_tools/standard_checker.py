@@ -71,11 +71,12 @@ def correct_date(date_string: str) -> datetime:
 class StandardChecker(VkUserChecker):
     _skill = 'A matchmaker standard Search Engine'
 
-    def __init__(self, client_id: str, api_methods: VkApiMethod, search_filter: dict = {}):
+    def __init__(self, client_id: int, api_methods: VkApiMethod, search_filter: dict):
         super(StandardChecker, self).__init__(client_id, api_methods, search_filter, self._skill)
 
-    def is_advisable_user(self, vk_id: str) -> bool:
+    def is_advisable_user(self, vk_id: int) -> bool:
         super(StandardChecker, self).is_advisable_user(vk_id)
+        self.user_info = self.get_user_info()
         bot_filter: dict = get_standard_filter(self.search_filter)
         if not self.get_control_attr_msg(bot_filter):
             return False
@@ -102,10 +103,10 @@ class StandardChecker(VkUserChecker):
                 break
             check_result = self._check_print_person_filter(vk_field_name, vk_val, filter_val, filter_dev)
             person_filter[vk_field_name] = person_filter[vk_field_name] or check_result
-            self.check_print_win_msg(person_filter, vk_field_name, vk_id)
-        return self.check_print_filters(person_filter, res, vk_id)
+            self.check_print_filter_passed(person_filter, vk_field_name, vk_id)
+        return self.check_print_fits_user(person_filter, res, vk_id)
 
-    def check_print_filters(self, filters, res, vk_id):
+    def check_print_fits_user(self, filters, res, vk_id):
         for field_name, field_filter in filters.items():
             print('\t Фильтр', field_name, '=', field_filter)  # ------------------------------
             res = res and field_filter
@@ -116,7 +117,7 @@ class StandardChecker(VkUserChecker):
               if res else f'\tПропускаем user{vk_id}...')
         return res
 
-    def check_print_win_msg(self, filters, vk_field_name, vk_id):
+    def check_print_filter_passed(self, filters, vk_field_name, vk_id):
         if filters[vk_field_name]:
             print(f'\tПРОШЁЛ по фильтру {vk_field_name.upper()} бродяга user{vk_id}!')
         return filters[vk_field_name]

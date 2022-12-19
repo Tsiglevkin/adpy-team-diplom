@@ -54,11 +54,11 @@ def write_json_file(dict_, file):
 def get_db_config_json():
     return {
         'login': 'postgres',
-        'password': 'postgres',
+        'password': '4sql%pg',
         'dbase name': 'vkinder',
         'server': 'localhost:5432',
         'scheme': 'public',
-        "overwrite": '',
+        "overwrite": True,
         'VK group table': 'vk_group',
         'Advisables table for VK group user': 'user_advisable',
         'Table of relationships of the chosen user': 'user_relationships',
@@ -264,7 +264,8 @@ def get_bot_menu_config_json():
                                         'filter': '',
                                         'service_code': '1232',
                                         'description': 'Рекомендуем',
-                                        'max_buttons_peer_line': '',
+                                        'max_buttons_peer_line': '2',
+                                        'last_one_found_id': 0,
                                         'services': {
                                             'next': {
                                                 'button': 'Следующий',

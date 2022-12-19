@@ -1,8 +1,9 @@
 # Модуль в процессе доработки
 
-from bot_config.config import get_config
-import sqlalchemy as sq
+from sqlalchemy import MetaData, Column, Integer, Boolean, String, ForeignKey
 from sqlalchemy.orm import declarative_base
+
+from bot_config.config import get_config
 
 Base = declarative_base()
 
@@ -26,41 +27,42 @@ def model_check(model_name, title):
 class VkGroup(Base):  # Users
     __tablename__ = model_check('VKGroup', 'VK group table')  # 'vk_group'
 
-    vk_id = sq.Column(sq.Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
 
     def __str__(self):
-        return f'VkGroup user with vk_id = {self.vk_id}'
+        return f'VkGroup user with id = {self.id}'
 
 
 class Advisable(Base):  # Candidate
     __tablename__ = model_check('Advisable', 'Advisables table for VK group user')   # 'user_advisable'
 
-    vk_id = sq.Column(sq.Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    liked = Column(Boolean, nullable=False)
 
     def __str__(self):
-        return f'Advisables table for user with vk_id = {self.vk_id}'
+        return f'user with id = {self.id} from Advisable table'
 
 
 class Chosen(Base):  # MarkList
     __tablename__ = model_check('Chosen', 'Table of interpersonal relationships')    # 'chosen'
 
-    vk_id = sq.Column(sq.Integer, primary_key=True)
-    chosen_vk_id = sq.Column(sq.Integer, primary_key=True)
-    liked = sq.Column(sq.Boolean, nullable=False)
+    id = Column(Integer, primary_key=True)
+    chosen_vk_id = Column(Integer, primary_key=True)
+    liked = Column(Boolean, nullable=False)
 
     def __str__(self):  # не уверен в верности метода.
-        return f'Chosen vk_id = {self.chosen_id} for user vk_id = {self.vk_id}'
+        return f'Chosen id = {self.id} for user vk_id = {self.id}'
 
 
 class ChosenUser(Base):  # MarkList
     __tablename__ = model_check('Chosen', 'Table of relationships of the chosen user')  # 'user_relationships'
 
-    vk_id = sq.Column(sq.Integer, primary_key=True)
-    chosen_vk_id = sq.Column(sq.Integer, primary_key=True)
-    liked = sq.Column(sq.Boolean, nullable=False)
+    id = Column(Integer, primary_key=True)
+    chosen_vk_id = Column(Integer, primary_key=True)
+    liked = Column(Boolean, nullable=False)
 
     def __str__(self):
-        return f'Chosen user with vk_id = {self.chosen_id}'
+        return f'Chosen user with id = {self.id}'
 
 
 def create_tables(engine):
