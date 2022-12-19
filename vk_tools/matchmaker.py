@@ -69,7 +69,7 @@ class Matchmaker(VkBot):
     def check_user(self, vk_id: int):
         return len(self.checkers) == sum(checker.is_advisable_user(vk_id=vk_id) for checker in self.checkers)
 
-    def search_advisable_mode_events(self, requests_step=10):
+    def search_advisable_mode_events(self, requests_block=50, requests_step=1):
         menu = self.menu.services
         api_fields = 'sex,city,bdate,counters'
 
@@ -85,21 +85,25 @@ class Matchmaker(VkBot):
 
         def next_button() -> dict:
             last_id = self.menu.service['last_one_found_id']
+            number_block = 0
             while True:
-                next_id_block = ','.join(str(next_id) for next_id in range(last_id + 1, last_id + requests_step))
+                next_id_block = ','.join(str(next_id) for next_id in range(
+                    last_id + 1, last_id + requests_block, requests_step))
                 users = self.vk_api_methods.users.get(user_ids=next_id_block, fields=api_fields)
                 if not users:
                     print('\tПоздравляем, ты всех перебрал, кто подходил под твои условия!')
                     db_close()
                     return {}
                 for user in users:
-                    ok = check_user(user)
-                    if ok:
+                    if check_user(user):
                         self.menu.service['last_one_found_id'] = user['id']
                         self.send_msg(peer_id=self.client_id, keyboard=self.get_keyboard(inline=True),
                                       message='Нашли {}'.format(self.get_user_title(user_id=user["id"])))
                         return user
                 last_id += requests_step
+                number_block += 1
+                if number_block % 20 == 0:
+                    self.send_msg(message='Терпение! Идёт поиск подходящих пиплов...')
 
         if self.event.type == VkBotEventType.MESSAGE_NEW:
             self.print_message_description()
@@ -113,6 +117,10 @@ class Matchmaker(VkBot):
                         self.exit()
                 elif text == menu['save']['command'].lower() or text == menu['save']['button'].lower():
                     self.db.add(MostMostUser(id=self.menu.service['last_one_found_id'], ban=False))
+                    if not next_button():
+                        self.exit()
+                elif text == menu['ban']['command'].lower() or text == menu['ban']['button'].lower():
+                    self.db.add(MostMostUser(id=self.menu.service['last_one_found_id'], ban=True))
                     if not next_button():
                         self.exit()
                 elif self.exit():

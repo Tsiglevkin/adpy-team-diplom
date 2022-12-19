@@ -131,7 +131,7 @@ class StandardChecker(VkUserChecker):
             return False
         if self.user.get('is_closed', ''):
             print(f'\nАккаунт user{self.user["id"]} ЗАКРЫТ!\n')
-            pprint(self.user)  # -----------------------
+            # pprint(self.user)  # -----------------------
             return False
         return True
 
