@@ -1,7 +1,6 @@
 #
 
 from abc import ABC, abstractmethod
-from pprint import pprint
 
 from vk_api.vk_api import VkApiMethod
 
@@ -15,8 +14,7 @@ class VkUserChecker(ABC):
         self.api_fields = 'sex,city,bdate,counters'
         self.client_id = client_id
         self.client_info = self.get_client_info()
-        self.user_id = None
-        self.user_info = None
+        self.user: dict = {}
         self.skill = skill
         print(self.skill, 'has been created')
 
@@ -31,11 +29,8 @@ class VkUserChecker(ABC):
     def get_client_info(self, client_info_fields='sex,city,bdate,counters'):
         return self.vk_api_methods.users.get(user_ids=self.client_id, fields=client_info_fields)[0]
 
-    def get_user_info(self, user_info_fields='sex,city,bdate,counters') -> dict:
-        return self.vk_api_methods.users.get(user_ids=self.user_id, fields=user_info_fields)[0]
-
     def __str__(self):
-        user = self.get_user_info()
+        user = self.user
         return "user{}: {} {} ({}) {} {}".format(
             user['id'], user.get('first_name', ''), user.get('last_name', ''),
             ['', 'жен', 'муж'][int(user.get('sex', ''))] if user.get('sex', '') else '',
@@ -43,6 +38,5 @@ class VkUserChecker(ABC):
             user.get('city', '')['title'] if user.get('city', '') else '')
 
     @abstractmethod
-    def is_advisable_user(self, vk_id: int) -> bool:
-        self.user_id = vk_id
-        self.user_info = self.get_user_info()
+    def is_advisable_user(self, user: dict) -> bool:
+        self.user = user

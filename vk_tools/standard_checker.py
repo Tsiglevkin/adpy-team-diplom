@@ -1,26 +1,27 @@
 # Проверяем пользователей на соответствие СТАНДАРТНОМУ фильтру
 
 from datetime import datetime, date
+from pprint import pprint
+
 from vk_api.vk_api import VkApi, VkApiMethod
 from vk_tools.checker import VkUserChecker
 
 
-def get_standard_filter(search_filter={}) -> dict:
-    if not search_filter:
-        return {}
-    try:
-        std_filter: dict = search_filter['standard']['services']
-        std = {}
-        for field in ['button', 'filter_api_field']:
-            std[field + 's'] = ', '.join(
-                std_filter[field_name][field] for field_name in std_filter if std_filter[field_name]['filter'])
-        std['filter_bot_fields'] = dict((field_name, std_filter[field_name]) for field_name in std_filter
-                                        if std_filter[field_name]['filter'])
-        return std
-    except KeyError as key_err:
-        print(f'\nОшибка данных: отсутствует ключ {key_err}\t( Matchmaker.get_standard_filter() )')
-    except Exception as other:
-        print('\nОшибка в Matchmaker.get_standard_filter():' + f'\n\t{other}')
+def get_standard_filter(search_filter) -> dict:
+    if search_filter:
+        try:
+            std_filter: dict = search_filter['standard']['services']
+            std = {}
+            for field in ['button', 'filter_api_field']:
+                std[field + 's'] = ', '.join(
+                    std_filter[field_name][field] for field_name in std_filter if std_filter[field_name]['filter'])
+            std['filter_bot_fields'] = dict((field_name, std_filter[field_name]) for field_name in std_filter
+                                            if std_filter[field_name]['filter'])
+            return std
+        except KeyError as key_err:
+            print(f'\nОшибка данных: отсутствует ключ {key_err}\t( Matchmaker.get_standard_filter() )')
+        except Exception as other:
+            print('\nОшибка в Matchmaker.get_standard_filter():' + f'\n\t{other}')
     return {}
 
 
@@ -74,9 +75,8 @@ class StandardChecker(VkUserChecker):
     def __init__(self, client_id: int, api_methods: VkApiMethod, search_filter: dict):
         super(StandardChecker, self).__init__(client_id, api_methods, search_filter, self._skill)
 
-    def is_advisable_user(self, vk_id: int) -> bool:
-        super(StandardChecker, self).is_advisable_user(vk_id)
-        self.user_info = self.get_user_info()
+    def is_advisable_user(self, user: dict) -> bool:
+        super(StandardChecker, self).is_advisable_user(user)
         bot_filter: dict = get_standard_filter(self.search_filter)
         if not self.get_control_attr_msg(bot_filter):
             return False
@@ -87,11 +87,11 @@ class StandardChecker(VkUserChecker):
             vk_field_name = bot_field.get('filter_api_field', '')
             if person_filter[vk_field_name]:
                 continue
-            vk_val = self.user_info.get(vk_field_name, '')
+            vk_val = self.user.get(vk_field_name, '')
             client_val = self.client_info.get(vk_field_name, '')
             filter_val = bot_field.get('filter_api_field_value', '')
             filter_dev = bot_field.get('filter_api_field_deviation_value', '0')
-            print('ПРОВЕРКА:', bot_field_name, '=', filter_val)  # -------------------------------------
+            print('\tПРОВЕРКА:', bot_field_name, '=', filter_val)  # -------------------------------------
             if not filter_val:
                 if client_val:
                     filter_val = client_val
@@ -103,8 +103,8 @@ class StandardChecker(VkUserChecker):
                 break
             check_result = self._check_print_person_filter(vk_field_name, vk_val, filter_val, filter_dev)
             person_filter[vk_field_name] = person_filter[vk_field_name] or check_result
-            self.check_print_filter_passed(person_filter, vk_field_name, vk_id)
-        return self.check_print_fits_user(person_filter, res, vk_id)
+            self.check_print_filter_passed(person_filter, vk_field_name, self.user['id'])
+        return self.check_print_fits_user(person_filter, res, self.user['id'])
 
     def check_print_fits_user(self, filters, res, vk_id):
         for field_name, field_filter in filters.items():
@@ -123,14 +123,15 @@ class StandardChecker(VkUserChecker):
         return filters[vk_field_name]
 
     def get_control_attr_msg(self, bot_filter):
-        if not (self.user_info and self.client_info and bot_filter):
+        if not (self.user and self.client_info and bot_filter):
             print('Недостаточно параметров! user, client, filter')
             return False
-        if self.user_id == self.client_id:
-            print(f'\nСамого клиента user{self.user_id} не рассматриваем, пропускаем!\n')
+        if self.user['id'] == self.client_id:
+            print(f'\nСамого клиента user{self.user["id"]} не рассматриваем, пропускаем!\n')
             return False
-        if self.user_info['is_closed']:
-            print(f'\nАккаунт user{self.user_id} ЗАКРЫТ!\n')
+        if self.user.get('is_closed', ''):
+            print(f'\nАккаунт user{self.user["id"]} ЗАКРЫТ!\n')
+            pprint(self.user)  # -----------------------
             return False
         return True
 
@@ -138,23 +139,23 @@ class StandardChecker(VkUserChecker):
         check_result = False
         if field_name == 'sex':
             check_result = int(vk_val) == int(filter_val)
-            print(f'\tvk{self.user_id}: {vk_val} -{check_result}- filter: {filter_val}')
+            print(f'\tvk{self.user["id"]}: {vk_val} -{check_result}- filter: {filter_val}')
         elif field_name == 'city':
             vk_value = vk_val.get('title', '')
             filter_value = filter_val.get('title', '')
             check_result = vk_value == filter_value
-            print(f'\tvk{self.user_id}: {vk_value} -{check_result}- filter: {filter_value}')
+            print(f'\tvk{self.user["id"]}: {vk_value} -{check_result}- filter: {filter_value}')
         elif field_name == 'bdate':
             vk_value = correct_date(vk_val).year
             filter_value = correct_date(filter_val).year
             filter_dev = int(filter_deviation) if filter_deviation and str(filter_deviation).isdigit() else 0
             if filter_dev:
                 check_result = in_int_deviation(val_dev=filter_dev, val=filter_value, check_val=vk_value)
-                print(f'\tvk{self.user_id}: {vk_value} -{check_result}- filter: {filter_value}'
+                print(f'\tvk{self.user["id"]}: {vk_value} -{check_result}- filter: {filter_value}'
                       f' с интервалом ({filter_dev})')
             else:
                 check_result = vk_val == filter_val
-                print(f'\tvk{self.user_id}: {vk_value} -{check_result}- filter: {filter_value}')
+                print(f'\tvk{self.user["id"]}: {vk_value} -{check_result}- filter: {filter_value}')
         else:
             print('Ошибка: проверялись не те поля!')  # -------------------------------
         return check_result

@@ -1,9 +1,8 @@
 #
 
-from pprint import pprint
-
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 
@@ -11,7 +10,7 @@ from vk_tools.vk_bot import VkBot
 from vk_tools.standard_checker import StandardChecker, get_standard_filter
 from bot_config.config import get_config
 from db_tools import orm_models as orm
-from db_tools.orm_models import VkGroup, Advisable
+from db_tools.orm_models import VkinderUser, MostMostUser
 from vk_tools.checker import VkUserChecker
 
 
@@ -22,6 +21,7 @@ class Matchmaker(VkBot):
         self._DB_CONFIG: dict = get_config('db', db)
         self.engine = sqlalchemy.create_engine(self.get_DSN())  # <class 'sqlalchemy.engine.base.Engine'>
         self.SessionLocal = sessionmaker(bind=self.engine)  # <class 'sqlalchemy.orm.session.sessionmaker'>
+        self.db: Session = None
         self.checkers = []
         self.client_id = None
         if bool(self._DB_CONFIG['overwrite']):
@@ -37,36 +37,14 @@ class Matchmaker(VkBot):
         self.checkers.append(checker)
         return self.checkers
 
-    def refresh_group_users(self) -> list:
-        db = self.SessionLocal()
-        if not (db and self.group_id and self.vk_tools):
-            print(f'Недостаточно параметров! db, group, tools\t-> {db}, {self.group_id}, {self.vk_tools} ...')
-            return []
-        print('\nRecording new users of VK group...')
-        vk_users_added = []
-        while True:
-            vk_group_users_right_now = self.vk_tools.get_all('groups.getMembers', 1000,
-                                                             {'group_id': self.group_id})['items']
-            pprint(vk_group_users_right_now)
-            vk_users_added += list(vk_id for vk_id in vk_group_users_right_now if
-                                   not db.query(VkGroup).filter(VkGroup.id == vk_id).first())
-            db.add_all(VkGroup(id=vk_id) for vk_id in vk_users_added)
-            print('Added  to the VK group:', vk_users_added if vk_users_added else 'has no new users!')
-            break
-        for user in db.query(Advisable).all():
-            db.delete(user)
-        db.commit()
-        db.close()
-        print('Congratulations! The updated list of users of the group has been read and recorded in the database.')
-        print('Deleted records in Advisable')
-        return vk_users_added
-
-    def search_advisable_users(self, client_id: int, search_filter: dict, select_mode=True, search_mode='No mass requests'):
+    def search_advisable_users(self, client_id: int, search_filter: dict):
         self.client_id = client_id
-        self.refresh_group_users()
-        # db: Session = Depends(Matchmaker.get_db(self.SessionLocal))
-        if search_mode != "No mass requests":
-            pass
+        if not self.db:
+            self.db = self.SessionLocal()
+        old_client = self.db.query(VkinderUser).filter(VkinderUser.id == client_id).first()
+        if not old_client:
+            print(f'Новый клиент {client_id}!')
+            self.db.add(VkinderUser(id=client_id))
         #        ----------  Стандартный поиск  -----------
         bot_filter: dict = get_standard_filter(search_filter=search_filter)
         print('\n------ {}:\t'.format(search_filter['standard']['description'].strip().upper()), end='')
@@ -84,21 +62,6 @@ class Matchmaker(VkBot):
         #   AdvancedChecker
         #
 
-        if not select_mode:
-            db = self.SessionLocal()  # db: Session
-            self.refresh_group_users()
-            if len(self.checkers):
-                db.add_all(Advisable(id=user.id) for user in db.query(VkGroup).all()
-                           if self.check_user(vk_id=user.id))
-            else:
-                print('No checkers have been created!')
-                db.add_all(Advisable(id=user.id) for user in db.query(VkGroup).all())
-            advisable_users = list(user.id for user in db.query(Advisable).all())
-            print(f'\n{advisable_users} --> {len(advisable_users)} was pulled into Advisable')
-            db.commit()
-            db.close()
-            return advisable_users
-
         self.menu.service['last_one_found_id'] = 0
         self.event.message['text'] = self.menu.services['next']['button']  # 'СЛЕДУЮЩИЙ'
         self.search_advisable_mode_events()
@@ -106,22 +69,37 @@ class Matchmaker(VkBot):
     def check_user(self, vk_id: int):
         return len(self.checkers) == sum(checker.is_advisable_user(vk_id=vk_id) for checker in self.checkers)
 
-    def search_advisable_mode_events(self):
+    def search_advisable_mode_events(self, requests_step=10):
         menu = self.menu.services
-        db = self.SessionLocal()
+        api_fields = 'sex,city,bdate,counters'
 
-        def next_button():
-            next_candidate = db.query(VkGroup
-                ).filter(
-                    self.check_user(vk_id=VkGroup.id)  # IndexError: list index out of range ????? то есть, то нет err
-                ).filter(
-                    VkGroup.id > self.menu.service['last_one_found_id']
-                ).first()
-            if next_candidate:
-                self.menu.service['last_one_found_id'] = next_candidate.id
-                self.send_msg(peer_id=self.client_id, message=self.get_user_title(user_id=next_candidate.id),
-                              keyboard=self.get_keyboard(inline=True))
-            return next_candidate
+        def check_user(user: dict) -> bool:
+            for checker in self.checkers:
+                if not checker.is_advisable_user(user):
+                    return False
+            return True
+
+        def db_close():
+            self.db.commit()
+            self.db.close()
+
+        def next_button() -> dict:
+            last_id = self.menu.service['last_one_found_id']
+            while True:
+                next_id_block = ','.join(str(next_id) for next_id in range(last_id + 1, last_id + requests_step))
+                users = self.vk_api_methods.users.get(user_ids=next_id_block, fields=api_fields)
+                if not users:
+                    print('\tПоздравляем, ты всех перебрал, кто подходил под твои условия!')
+                    db_close()
+                    return {}
+                for user in users:
+                    ok = check_user(user)
+                    if ok:
+                        self.menu.service['last_one_found_id'] = user['id']
+                        self.send_msg(peer_id=self.client_id, keyboard=self.get_keyboard(inline=True),
+                                      message='Нашли {}'.format(self.get_user_title(user_id=user["id"])))
+                        return user
+                last_id += requests_step
 
         if self.event.type == VkBotEventType.MESSAGE_NEW:
             self.print_message_description()
@@ -134,20 +112,18 @@ class Matchmaker(VkBot):
                     if not next_button():
                         self.exit()
                 elif text == menu['save']['command'].lower() or text == menu['save']['button'].lower():
-                    current_candidate = db.get(VkGroup, self.menu.service['last_one_found_id'])
-                    db.add(Advisable(id=current_candidate.id, liked=True))
+                    self.db.add(MostMostUser(id=self.menu.service['last_one_found_id'], ban=False))
                     if not next_button():
                         self.exit()
                 elif self.exit():
-                    pass
+                    db_close()
                 else:
                     if not self.event.from_chat:
                         self.start_mode(message='Не понимаю...')
             except KeyError as key_err:
-                self.my_except(key_err, f'Попытка взять значение по ошибочному ключу {key_err}', menu)
+                self.my_except(key_err, f'Попытка взять значение по ошибочному ключу {key_err}'
+                                        f' в search_advisable_mode_events', menu)
+                raise key_err
             except Exception as other:
                 self.my_except(other)
-                raise other
-            self.menu.service['last_one_found_id'] = 0
-            db.commit()
-            db.close()
+                # raise other

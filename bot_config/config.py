@@ -59,10 +59,9 @@ def get_db_config_json():
         'server': 'localhost:5432',
         'scheme': 'public',
         "overwrite": True,
-        'VK group table': 'vk_group',
-        'Advisables table for VK group user': 'user_advisable',
-        'Table of relationships of the chosen user': 'user_relationships',
-        'Table of interpersonal relationships': 'chosen'
+        'VkinderUser table for bot fans': 'vkinder_users',
+        'Most-most users table': 'most_most_users',
+        'Table of relationships of db': 'bridge'
     }
 
 
@@ -154,40 +153,6 @@ def get_bot_menu_config_json():
                                                         'description': 'ровесники',
                                                         'max_buttons_peer_line': '',
                                                         'services': {}},
-                                                    # 'gender': {
-                                                    #     'button': 'Пол',
-                                                    #     'command': '/gender',
-                                                    #     'filter': '',
-                                                    #     'filter_api_field': 'sex',
-                                                    #     'filter_api_field_value': '',
-                                                    #     'filter_api_field_deviation_value': '',
-                                                    #     'service_code': '123411',
-                                                    #     'description': 'Мужчина',
-                                                    #     'max_buttons_peer_line': '',
-                                                    #     'services': {
-                                                    #         'male': {
-                                                    #             'button': 'Муж',
-                                                    #             'command': '@@/gender:m',
-                                                    #             'filter': '',
-                                                    #             'filter_api_field': 'sex',
-                                                    #             'filter_api_field_value': '2',
-                                                    #             'filter_api_field_deviation_value': '0',
-                                                    #             'service_code': '123411',
-                                                    #             'description': 'Мужчина',
-                                                    #             'max_buttons_peer_line': '',
-                                                    #             'services': {}},
-                                                    #         'female': {
-                                                    #             'button': 'Жен',
-                                                    #             'command': '@@/gender:f',
-                                                    #             'filter': '',
-                                                    #             'filter_api_field': 'sex',
-                                                    #             'filter_api_field_value': '1',
-                                                    #             'filter_api_field_deviation_value': '0',
-                                                    #             'service_code': '123412',
-                                                    #             'description': 'Женщина',
-                                                    #             'max_buttons_peer_line': '',
-                                                    #             'services': {}},
-                                                    #     }},
                                                     'male': {
                                                         'button': 'Муж',
                                                         'command': '/m',

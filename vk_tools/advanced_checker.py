@@ -10,6 +10,6 @@ class AdvancedChecker(VkUserChecker):
     def __init__(self, client_id: int, api_methods: VkApiMethod, search_filter: dict):
         super(AdvancedChecker, self).__init__(client_id, api_methods, search_filter, self._skill)
 
-    def is_advisable_user(self, vk_id: int) -> bool:
-        super(AdvancedChecker, self).is_advisable_user(vk_id)
+    def is_advisable_user(self, user: dict) -> bool:
+        super(AdvancedChecker, self).is_advisable_user(user)
         return True
