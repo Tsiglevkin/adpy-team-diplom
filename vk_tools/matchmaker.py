@@ -15,6 +15,9 @@ from vk_tools.checker import VkUserChecker
 
 
 class Matchmaker(VkBot):
+    """
+    Выполняет поиск, показ и сохранение/бан выбранных из подходящих юзверей
+    """
 
     def __init__(self, bot='bot.cfg', db='db.cfg'):
         super().__init__(bot)
@@ -38,6 +41,12 @@ class Matchmaker(VkBot):
         return self.checkers
 
     def search_advisable_users(self, client_id: int, search_filter: dict):
+        """
+        Подключение разных поисковых движков (фильтров) и интерфейса
+        :param client_id:
+        :param search_filter:
+        :return:
+        """
         self.client_id = client_id
         if not self.db:
             self.db = self.SessionLocal()
@@ -66,24 +75,45 @@ class Matchmaker(VkBot):
         self.event.message['text'] = self.menu.services['next']['button']  # 'СЛЕДУЮЩИЙ'
         self.search_advisable_mode_events()
 
-    def check_user(self, vk_id: int):
-        return len(self.checkers) == sum(checker.is_advisable_user(vk_id=vk_id) for checker in self.checkers)
-
     def search_advisable_mode_events(self, requests_block=50, requests_step=1):
+        """
+        Поиск (прогон по фильтрам), просмотр и выбор подходящих и забаненных пользователей
+        :param requests_block: кол-во пользователей в api-запросах
+        :param requests_step: шаг проверяемых в блоке api-запроса
+        :return: user (из полученного json)
+        """
         menu = self.menu.services
         api_fields = 'sex,city,bdate,counters'
 
         def check_user(user: dict) -> bool:
+            """
+            Работа фмльтров (подходит ли пользователь по выбранным условиям)
+            :param user: из json
+            :return:
+            """
             for checker in self.checkers:
                 if not checker.is_advisable_user(user):
                     return False
             return True
 
         def db_close():
-            self.db.commit()
-            self.db.close()
+            """
+            Сохранение в базу и закрытие текущей локальной сессии
+            :return: err
+            """
+            try:
+                err = ''
+                self.db.commit()
+                self.db.close()
+            except Exception as err:
+                print(err)
+            return err
 
         def next_button() -> dict:
+            """
+            Операция "Следующий"
+            :return: user (из полученного json)
+            """
             last_id = self.menu.service['last_one_found_id']
             number_block = 0
             while True:
