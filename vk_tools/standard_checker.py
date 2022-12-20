@@ -1,8 +1,6 @@
 # Проверяем пользователей на соответствие СТАНДАРТНОМУ фильтру
 
 from datetime import datetime, date
-from pprint import pprint
-
 from vk_api.vk_api import VkApi, VkApiMethod
 from vk_tools.checker import VkUserChecker
 
@@ -26,11 +24,23 @@ def get_standard_filter(search_filter) -> dict:
 
 
 def in_int_deviation(val_dev: int, val: int, check_val: int) -> bool:
+    '''
+    Проверка принадлежности check_val интервалу val_dev интов от значения val
+    :param val_dev:
+    :param val:
+    :param check_val:
+    :return:
+    '''
     dev = val + val_dev
     return val < check_val <= val_dev + dev or val + dev <= check_val < val
 
 
 def correct_date(date_string: str) -> datetime:
+    """
+    Разбор строки с датой рождения пользователя
+    :param date_string:
+    :return: bdate: откорректированная дата
+    """
     null_date = datetime.strptime('1.1.1000', "%d.%m.%Y")
     if not date_string.strip():
         return null_date
@@ -91,7 +101,7 @@ class StandardChecker(VkUserChecker):
             client_val = self.client_info.get(vk_field_name, '')
             filter_val = bot_field.get('filter_api_field_value', '')
             filter_dev = bot_field.get('filter_api_field_deviation_value', '0')
-            print('\tПРОВЕРКА:', bot_field_name, '=', filter_val)  # -------------------------------------
+            print('\nПРОВЕРКА:', bot_field_name, '=', filter_val)  # -------------------------------------
             if not filter_val:
                 if client_val:
                     filter_val = client_val
@@ -126,10 +136,10 @@ class StandardChecker(VkUserChecker):
         if not (self.user and self.client_info and bot_filter):
             print('Недостаточно параметров! user, client, filter')
             return False
-        if self.user['id'] == self.client_id:
+        if self.user["id"] == self.client_id:
             print(f'\nСамого клиента user{self.user["id"]} не рассматриваем, пропускаем!\n')
             return False
-        if self.user.get('is_closed', ''):
+        if self.user.get("is_closed", "") or self.user.get("deactivated", ""):
             print(f'\nАккаунт user{self.user["id"]} ЗАКРЫТ!\n')
             # pprint(self.user)  # -----------------------
             return False

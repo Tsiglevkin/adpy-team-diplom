@@ -1,8 +1,7 @@
-# Модуль в процессе доработки
 #
 
-from sqlalchemy import MetaData, Column, Integer, Boolean, String, ForeignKey
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import MetaData, Column, Integer, Boolean, Date, String, ForeignKey
+from sqlalchemy.orm import declarative_base, relationship
 from bot_config.config import get_config
 
 Base = declarative_base()
@@ -23,33 +22,38 @@ def model_check(model_name, title):
         quit(1)
 
 
-class VkinderUser(Base):  # Users
-    __tablename__ = model_check('VkinderUser', 'VkinderUser table for bot fans')  # 'vkinder_users'
+class VKinder(Base):  # Users
+    __tablename__ = model_check('Vkinder', 'Vkinder table for VKbot fans')  # 'vkinders'
 
-    id = Column(Integer, primary_key=True, index=True)
+    vk_id = Column(Integer, primary_key=True, index=True)
+    first_visit_date = Column(Date, nullable=False)
 
     def __str__(self):
-        return f'VkinderUser id = {self.id}'
+        return f'Vkinder user id = {self.id}'
 
 
-class MostMostUser(Base):
-    __tablename__ = model_check('MostMostUser', 'Most-most users table')  # 'most_most_users'
+class VkIdol(Base):
+    __tablename__ = model_check('VKIdol', 'VKIdol users table')  # 'vk_idols'
 
-    id = Column(Integer, primary_key=True, index=True)
+    vk_idol_id = Column(Integer, primary_key=True, index=True)
     ban = Column(Boolean, nullable=False)
+    rec_date = Column(Date, nullable=False)
 
     def __str__(self):
         return f'MostMostUser id = {self.id}e'
 
 
-class Bridge(Base):
-    __tablename__ = model_check('Bridge', 'Table of relationships of db')  # 'bridge'
+class VKinderConnections(Base):
+    __tablename__ = model_check('VKinderConnections', 'VKinder connections table of db relationships') #'vk_connections'
 
-    user_id = Column(Integer, primary_key=True)
-    ban_id = Column(Integer, primary_key=True)
+    vk_id = Column(Integer, ForeignKey('vkinders.vk_id'), primary_key=True)
+    vk_idol_id = Column(Integer, ForeignKey('vk_idols.vk_idol_id'), primary_key=True)
+
+    vkinder = relationship(VKinder, backref='bridge')
+    vkidol = relationship(VkIdol, backref='bridge')
 
     def __str__(self):  # не уверен в верности метода.
-        return f'Bridge with user_id = {self.user_id} and ban_id = {self.ban_id}'
+        return f'Bridge with user id = {self.id} and vk_idol_id = {self.vk_idol_id}'
 
 
 def create_tables(engine):

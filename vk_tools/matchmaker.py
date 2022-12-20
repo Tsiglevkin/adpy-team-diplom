@@ -1,4 +1,6 @@
-#
+#  Модуль в разработке
+
+from datetime import date
 
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
@@ -10,7 +12,7 @@ from vk_tools.vk_bot import VkBot
 from vk_tools.standard_checker import StandardChecker, get_standard_filter
 from bot_config.config import get_config
 from db_tools import orm_models as orm
-from db_tools.orm_models import VkinderUser, MostMostUser
+from db_tools.orm_models import VKinder, VkIdol, VKinderConnections
 from vk_tools.checker import VkUserChecker
 
 
@@ -50,10 +52,11 @@ class Matchmaker(VkBot):
         self.client_id = client_id
         if not self.db:
             self.db = self.SessionLocal()
-        old_client = self.db.query(VkinderUser).filter(VkinderUser.id == client_id).first()
+        old_client = self.db.query(VKinder).filter(VKinder.vk_id == client_id).first()
         if not old_client:
             print(f'Новый клиент {client_id}!')
-            self.db.add(VkinderUser(id=client_id))
+            self.db.add(VKinder(vk_id=client_id, first_visit_date=date.today()))
+
         #        ----------  Стандартный поиск  -----------
         bot_filter: dict = get_standard_filter(search_filter=search_filter)
         print('\n------ {}:\t'.format(search_filter['standard']['description'].strip().upper()), end='')
@@ -146,11 +149,17 @@ class Matchmaker(VkBot):
                     if not next_button():
                         self.exit()
                 elif text == menu['save']['command'].lower() or text == menu['save']['button'].lower():
-                    self.db.add(MostMostUser(id=self.menu.service['last_one_found_id'], ban=False))
+                    self.db.add(VkIdol(vk_idol_id=self.menu.service['last_one_found_id'],
+                                       ban=False, rec_date=date.today()))
+                    self.db.add(VKinderConnections(vk_idol_id=self.menu.service['last_one_found_id'],
+                                                   vk_id=self.client_id))
                     if not next_button():
                         self.exit()
                 elif text == menu['ban']['command'].lower() or text == menu['ban']['button'].lower():
-                    self.db.add(MostMostUser(id=self.menu.service['last_one_found_id'], ban=True))
+                    self.db.add(VkIdol(vk_idol_id=self.menu.service['last_one_found_id'], ban=True,
+                                       rec_date=date.today()))
+                    self.db.add(VKinderConnections(vk_idol_id=self.menu.service['last_one_found_id'],
+                                                   vk_id=self.client_id))
                     if not next_button():
                         self.exit()
                 elif self.exit():
