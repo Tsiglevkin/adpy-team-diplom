@@ -5,6 +5,7 @@ from pprint import pprint
 
 import requests
 import vk_api
+from vk_api import VkUpload
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType, VkBotMessageEvent
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
@@ -49,6 +50,7 @@ class VkBot:
         self.group_id = self._BOT_CONFIG['group_id']
         self.menu = VkBotMenu()
         self.vk_session = vk_api.VkApi(token=self._BOT_CONFIG['token'])  # vk_api.vk_api.VkApi
+        self.vk_upload = VkUpload(self.vk_session)
         self.longpoll = VkBotLongPoll(self.vk_session, group_id=self.group_id)
         self.event: VkBotMessageEvent = None
         self.vk_tools = vk_api.VkTools(self.vk_session)  # vk_api.tools.VkTools
@@ -390,20 +392,20 @@ class VkBot:
             user_id = self.event.message["from_id"]
         return self.vk_api_methods.users.get(user_ids=user_id, fields=fields, name_case=name_case)[0]
 
-    def get_user_name(self, user_id='', name_case='nom'):
+    def get_user_name(self, user_id=0, name_case='nom'):
         """ Получаем имя пользователя"""
         if not user_id:
             user_id = self.event.message["from_id"]
         user = self.get_user(user_id=user_id, name_case=name_case)
         return f'{user.get("first_name", "")} {user.get("last_name", "")}'
 
-    def get_user_city(self, user_id=''):
+    def get_user_city(self, user_id=0):
         if not user_id:
             user_id = self.event.message["from_id"]
         user = self.get_user(user_id=user_id)
         return user.get("city", '')
 
-    def get_user_title(self, user_id=''):
+    def get_user_title(self, user_id=0):
         """ Получаем кратко пользователя"""
         if not user_id:
             user_id = self.event.message["from_id"]

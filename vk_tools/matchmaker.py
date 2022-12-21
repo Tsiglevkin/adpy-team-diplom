@@ -1,14 +1,17 @@
 #  Модуль в разработке
 
 from datetime import date
+from pprint import pprint
+import requests
 
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session
 
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
-
 from vk_tools.vk_bot import VkBot
+from vk_api import VkUpload
+
 from vk_tools.standard_checker import StandardChecker, get_standard_filter
 from vk_tools.free_user_case_checker import LegitimacyUserChecker
 from bot_config.config import get_config
@@ -59,8 +62,8 @@ class Matchmaker(VkBot):
             self.db.add(VKinder(vk_id=client_id, first_visit_date=date.today()))
         self.chosen_vk_users = self.db.query(VkIdol).filter(VkIdol.vk_id == client_id)
         ban = self.chosen_vk_users.filter(VkIdol.ban)
-        self.add_checker(LegitimacyUserChecker(user_ids=(user.vk_idol_id for user in self.chosen_vk_users),
-                                               ban_ids=(ban_user.vk_idol_id for ban_user in ban)))
+        self.add_checker(LegitimacyUserChecker(user_ids=list(user.vk_idol_id for user in self.chosen_vk_users),
+                                               ban_ids=list(ban_user.vk_idol_id for ban_user in ban)))
         #        ----------  Стандартный поиск  -----------
         bot_filter: dict = get_standard_filter(search_filter=search_filter)
         print('\n------ {}:\t'.format(search_filter['standard']['description'].strip().upper()), end='')
@@ -90,7 +93,7 @@ class Matchmaker(VkBot):
         :return: user (из полученного json)
         """
         menu = self.menu.services
-        api_fields = 'sex,city,bdate,counters'
+        api_fields = 'sex,city,bdate,counters,photo_id,photo_max,_photo_max_origin'
 
         def check_user(user: dict) -> bool:
             """
@@ -116,6 +119,23 @@ class Matchmaker(VkBot):
                 print(err)
             return err
 
+        def get_foto_attachment(user: dict):
+            photos = []
+            if user.get('photo_id', ''):
+                photos.append(user['photo_id'])
+            if user.get('photo_max', ''):
+                photos.append(user['photo_max'])
+            if user.get('photo_max_origin', ''):
+                photos.append(user['photo_max_origin'])
+            # attachments = []
+            # for photo_url in photos:
+            #     image = requests.Session().get(photo_url, stream=True)
+                # photo = self.vk_upload.photo_messages(photos=image.raw)[0]
+                # pprint(self.vk_upload.photo_messages(photos=image.raw))
+                # attachments.append('photo{}_{}'.format(photo['owner_id'], photo['id']))
+            # return ','.join(attachments)
+            return ','.join(photos)
+
         def next_button() -> dict:
             """
             Операция "Следующий"
@@ -135,7 +155,8 @@ class Matchmaker(VkBot):
                     if check_user(user):
                         self.menu.service['last_one_found_id'] = user['id']
                         self.send_msg(peer_id=self.client_id, keyboard=self.get_keyboard(inline=True),
-                                      message='Нашли {}'.format(self.get_user_title(user_id=user["id"])))
+                                      message='Нашли {}'.format(self.get_user_title(user_id=user["id"])),
+                                      attachment=get_foto_attachment(user))
                         return user
                 last_id += requests_step
                 number_block += 1
@@ -173,4 +194,4 @@ class Matchmaker(VkBot):
                 raise key_err
             except Exception as other:
                 self.my_except(other)
-                # raise other
+                raise other
