@@ -1,7 +1,6 @@
 #
 
 from abc import ABC, abstractmethod
-
 from vk_api.vk_api import VkApiMethod
 
 
@@ -27,7 +26,8 @@ class VkUserChecker(ABC):
         self.__search_filter = search_filter
 
     def get_client_info(self, client_info_fields='sex,city,bdate,counters'):
-        return self.vk_api_methods.users.get(user_ids=self.client_id, fields=client_info_fields)[0]
+        return self.vk_api_methods.users.get(user_ids=self.client_id, fields=client_info_fields
+                                             )[0] if self.vk_api_methods else {}
 
     def __str__(self):
         user = self.user

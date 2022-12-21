@@ -7,6 +7,9 @@ from bot_config.config import get_config
 
 
 class VkBotMenu:
+    """
+    Хранение активного меню
+    """
     def __init__(self, menu='bot_menu.cfg'):
         self.base_menu: dict = get_config('bot_menu', menu)['mode']
         self.service_name = 'start-up'

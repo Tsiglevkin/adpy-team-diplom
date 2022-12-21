@@ -1,11 +1,20 @@
 # Проверяем пользователей на соответствие СТАНДАРТНОМУ фильтру
 
 from datetime import datetime, date
+from pprint import pprint
+
 from vk_api.vk_api import VkApi, VkApiMethod
-from vk_tools.checker import VkUserChecker
+from vk_tools.checker import VkUserChecker  # базовый класс
 
 
 def get_standard_filter(search_filter) -> dict:
+    f"""
+    Текущее меню: в виде 2-х строк, содержащих кнопки текущего меню ч-з запятую: ['button']
+     и поля в vk_api ч-з запятую: ['filter_api_field'],
+    В словаре услуги активного меню из конфига: ['filter_bot_fields']
+    :param search_filter: активное меню
+    :return: dict: {str, str, {dict} }
+    """
     if search_filter:
         try:
             std_filter: dict = search_filter['standard']['services']
@@ -80,12 +89,21 @@ def correct_date(date_string: str) -> datetime:
 
 
 class StandardChecker(VkUserChecker):
+    """
+    Проверяет пользователей на соответствие СТАНДАРТНОМУ фильтру
+    СТАНДАРТНЫЙ режим поиска подходящих пользователей всей сети VK
+    """
     _skill = 'A matchmaker standard Search Engine'
 
     def __init__(self, client_id: int, api_methods: VkApiMethod, search_filter: dict):
         super(StandardChecker, self).__init__(client_id, api_methods, search_filter, self._skill)
 
     def is_advisable_user(self, user: dict) -> bool:
+        """
+        Подготовка данных и организация проверки
+        :param user: полученные из ответа на запрос данные по проверяемому пользователю VK
+        :return: результат проверки: прошел/не прошел
+        """
         super(StandardChecker, self).is_advisable_user(user)
         bot_filter: dict = get_standard_filter(self.search_filter)
         if not self.get_control_attr_msg(bot_filter):
@@ -113,55 +131,66 @@ class StandardChecker(VkUserChecker):
                 break
             check_result = self._check_print_person_filter(vk_field_name, vk_val, filter_val, filter_dev)
             person_filter[vk_field_name] = person_filter[vk_field_name] or check_result
-            self.check_print_filter_passed(person_filter, vk_field_name, self.user['id'])
-        return self.check_print_fits_user(person_filter, res, self.user['id'])
+            self.check_print_filter_passed(person_filter, vk_field_name)
+        return self.check_print_fits_user(person_filter, res)
 
-    def check_print_fits_user(self, filters, res, vk_id):
+    def check_print_fits_user(self, filters, res):
+        user_id = self.user["id"]
         for field_name, field_filter in filters.items():
             print('\t Фильтр', field_name, '=', field_filter)  # ------------------------------
             res = res and field_filter
             if not res:
-                print(f'\tНЕ ПРОШЁЛ по фильтру {field_name.upper()} бродяга user{vk_id}!')
+                print(f'\tНЕ ПРОШЁЛ по фильтру {field_name.upper()} бродяга user{user_id}!')
                 break
         print(f'\nCongratulations! Найден подходящий {self}\n'
-              if res else f'\tПропускаем user{vk_id}...')
+              if res else f'\tПропускаем user{user_id}...')
         return res
 
-    def check_print_filter_passed(self, filters, vk_field_name, vk_id):
+    def check_print_filter_passed(self, filters, vk_field_name):
         if filters[vk_field_name]:
-            print(f'\tПРОШЁЛ по фильтру {vk_field_name.upper()} бродяга user{vk_id}!')
+            print(f'\tПРОШЁЛ по фильтру {vk_field_name.upper()} бродяга user{self.user["id"]}!')
         return filters[vk_field_name]
 
     def get_control_attr_msg(self, bot_filter):
+        user_id = self.user["id"]
         if not (self.user and self.client_info and bot_filter):
             print('Недостаточно параметров! user, client, filter')
             return False
-        if self.user["id"] == self.client_id:
-            print(f'\nСамого клиента user{self.user["id"]} не рассматриваем, пропускаем!\n')
+        if user_id == self.client_id:
+            print(f'\nСамого клиента user{user_id} не рассматриваем, пропускаем!\n')
             return False
         if self.user.get("is_closed", "") or self.user.get("deactivated", ""):
-            print(f'\nАккаунт user{self.user["id"]} ЗАКРЫТ!\n')
+            print(f'\nАккаунт user{user_id} ЗАКРЫТ!\n')
             # pprint(self.user)  # -----------------------
             return False
         return True
 
     def _check_print_person_filter(self, field_name, vk_val, filter_val, filter_deviation) -> bool:
+        '''
+        Проверка и печать результатов по каждому полю из фильтра
+        :param field_name: название api-поля из ответа на запрос
+        :param vk_val: проверяемые значения полей
+        :param filter_val: заданное значение фильтра
+        :param filter_deviation: доп.интервал (для возраста)
+        :return:
+        '''
         check_result = False
+        user_id = self.user["id"]
         if field_name == 'sex':
             check_result = int(vk_val) == int(filter_val)
-            print(f'\tvk{self.user["id"]}: {vk_val} -{check_result}- filter: {filter_val}')
+            print(f'\tvk{user_id}: {vk_val} -{check_result}- filter: {filter_val}')
         elif field_name == 'city':
             vk_value = vk_val.get('title', '')
             filter_value = filter_val.get('title', '')
             check_result = vk_value == filter_value
-            print(f'\tvk{self.user["id"]}: {vk_value} -{check_result}- filter: {filter_value}')
+            print(f'\tvk{user_id}: {vk_value} -{check_result}- filter: {filter_value}')
         elif field_name == 'bdate':
             vk_value = correct_date(vk_val).year
             filter_value = correct_date(filter_val).year
             filter_dev = int(filter_deviation) if filter_deviation and str(filter_deviation).isdigit() else 0
             if filter_dev:
                 check_result = in_int_deviation(val_dev=filter_dev, val=filter_value, check_val=vk_value)
-                print(f'\tvk{self.user["id"]}: {vk_value} -{check_result}- filter: {filter_value}'
+                print(f'\tvk{user_id}: {vk_value} -{check_result}- filter: {filter_value}'
                       f' с интервалом ({filter_dev})')
             else:
                 check_result = vk_val == filter_val

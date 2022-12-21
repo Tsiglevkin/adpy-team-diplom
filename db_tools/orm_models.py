@@ -35,25 +35,15 @@ class VKinder(Base):  # Users
 class VkIdol(Base):
     __tablename__ = model_check('VKIdol', 'VKIdol users table')  # 'vk_idols'
 
-    vk_idol_id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    vk_idol_id = Column(Integer, unique=True, nullable=False, index=True)
+    vk_id = Column(Integer, ForeignKey('vkinders.vk_id'), primary_key=True)
     ban = Column(Boolean, nullable=False)
     rec_date = Column(Date, nullable=False)
+    idols = relationship(VKinder, backref='vkinders')
 
     def __str__(self):
         return f'MostMostUser id = {self.id}e'
-
-
-class VKinderConnections(Base):
-    __tablename__ = model_check('VKinderConnections', 'VKinder connections table of db relationships') #'vk_connections'
-
-    vk_id = Column(Integer, ForeignKey('vkinders.vk_id'), primary_key=True)
-    vk_idol_id = Column(Integer, ForeignKey('vk_idols.vk_idol_id'), primary_key=True)
-
-    vkinder = relationship(VKinder, backref='bridge')
-    vkidol = relationship(VkIdol, backref='bridge')
-
-    def __str__(self):  # не уверен в верности метода.
-        return f'Bridge with user id = {self.id} and vk_idol_id = {self.vk_idol_id}'
 
 
 def create_tables(engine):

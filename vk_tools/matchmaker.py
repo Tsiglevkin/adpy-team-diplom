@@ -10,16 +10,15 @@ from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 
 from vk_tools.vk_bot import VkBot
 from vk_tools.standard_checker import StandardChecker, get_standard_filter
+from vk_tools.free_user_case_checker import LegitimacyUserChecker
 from bot_config.config import get_config
 from db_tools import orm_models as orm
-from db_tools.orm_models import VKinder, VkIdol, VKinderConnections
+from db_tools.orm_models import VKinder, VkIdol
 from vk_tools.checker import VkUserChecker
 
 
 class Matchmaker(VkBot):
-    """
-    Выполняет поиск, показ и сохранение/бан выбранных из подходящих юзверей
-    """
+    """ Выполняет поиск, показ и сохранение/бан выбранных из подходящих юзверей    """
 
     def __init__(self, bot='bot.cfg', db='db.cfg'):
         super().__init__(bot)
@@ -29,6 +28,7 @@ class Matchmaker(VkBot):
         self.db: Session = None
         self.checkers = []
         self.client_id = None
+        self.chosen_vk_users = None
         if bool(self._DB_CONFIG['overwrite']):
             orm.drop_tables(self.engine)
         orm.create_tables(self.engine)
@@ -38,13 +38,13 @@ class Matchmaker(VkBot):
         db = self._DB_CONFIG
         return 'postgresql://{}:{}@{}/{}'.format(db["login"], db["password"], db["server"], db["dbase name"])
 
-    def add_checker(self, checker: VkUserChecker) -> list:
+    def add_checker(self, checker: object) -> list:
         self.checkers.append(checker)
         return self.checkers
 
     def search_advisable_users(self, client_id: int, search_filter: dict):
         """
-        Подключение разных поисковых движков (фильтров) и интерфейса
+        Подключение разных фильтров и интерфейса
         :param client_id:
         :param search_filter:
         :return:
@@ -52,11 +52,15 @@ class Matchmaker(VkBot):
         self.client_id = client_id
         if not self.db:
             self.db = self.SessionLocal()
+
         old_client = self.db.query(VKinder).filter(VKinder.vk_id == client_id).first()
         if not old_client:
             print(f'Новый клиент {client_id}!')
             self.db.add(VKinder(vk_id=client_id, first_visit_date=date.today()))
-
+        self.chosen_vk_users = self.db.query(VkIdol).filter(VkIdol.vk_id == client_id)
+        ban = self.chosen_vk_users.filter(VkIdol.ban)
+        self.add_checker(LegitimacyUserChecker(user_ids=(user.vk_idol_id for user in self.chosen_vk_users),
+                                               ban_ids=(ban_user.vk_idol_id for ban_user in ban)))
         #        ----------  Стандартный поиск  -----------
         bot_filter: dict = get_standard_filter(search_filter=search_filter)
         print('\n------ {}:\t'.format(search_filter['standard']['description'].strip().upper()), end='')
@@ -78,7 +82,7 @@ class Matchmaker(VkBot):
         self.event.message['text'] = self.menu.services['next']['button']  # 'СЛЕДУЮЩИЙ'
         self.search_advisable_mode_events()
 
-    def search_advisable_mode_events(self, requests_block=50, requests_step=1):
+    def search_advisable_mode_events(self, requests_block=10, requests_step=1):
         """
         Поиск (прогон по фильтрам), просмотр и выбор подходящих и забаненных пользователей
         :param requests_block: кол-во пользователей в api-запросах
@@ -137,10 +141,12 @@ class Matchmaker(VkBot):
                 number_block += 1
                 if number_block % 20 == 0:
                     self.send_msg(message='Терпение! Идёт поиск подходящих пиплов...')
+            ###
 
         if self.event.type == VkBotEventType.MESSAGE_NEW:
             self.print_message_description()
             text = self.event.message['text'].lower()
+            user_id = self.menu.service['last_one_found_id']
             # Oтветы:
             try:
                 if self.event.from_chat:
@@ -149,17 +155,11 @@ class Matchmaker(VkBot):
                     if not next_button():
                         self.exit()
                 elif text == menu['save']['command'].lower() or text == menu['save']['button'].lower():
-                    self.db.add(VkIdol(vk_idol_id=self.menu.service['last_one_found_id'],
-                                       ban=False, rec_date=date.today()))
-                    self.db.add(VKinderConnections(vk_idol_id=self.menu.service['last_one_found_id'],
-                                                   vk_id=self.client_id))
+                    self.db.add(VkIdol(vk_idol_id=user_id, vk_id=self.client_id, ban=False, rec_date=date.today()))
                     if not next_button():
                         self.exit()
                 elif text == menu['ban']['command'].lower() or text == menu['ban']['button'].lower():
-                    self.db.add(VkIdol(vk_idol_id=self.menu.service['last_one_found_id'], ban=True,
-                                       rec_date=date.today()))
-                    self.db.add(VKinderConnections(vk_idol_id=self.menu.service['last_one_found_id'],
-                                                   vk_id=self.client_id))
+                    self.db.add(VkIdol(vk_idol_id=user_id, vk_id=self.client_id, ban=True, rec_date=date.today()))
                     if not next_button():
                         self.exit()
                 elif self.exit():
